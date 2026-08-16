@@ -11,7 +11,7 @@ const checkCore = unstable_cache(async () => {
 }, ['flowpay-health-v13'], { revalidate: 15 })
 
 export async function GET() {
-  const configured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY && (process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY))
+  const configured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY && process.env.SUPABASE_SECRET_KEY)
   let database = false
   let routing = false
   if (configured) {
@@ -29,5 +29,5 @@ export async function GET() {
     status: ok ? 'operational' : 'degraded',
     checks: { application: configured, database, routing },
     timestamp: new Date().toISOString(),
-  }, { status: ok ? 200 : 503, headers: { 'Cache-Control': 'public, max-age=5, s-maxage=15, stale-while-revalidate=30' } })
+  }, { status: ok ? 200 : 503, headers: { 'Cache-Control': 'public, max-age=5, s-maxage=15' } })
 }

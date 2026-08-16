@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { authenticatedClient } from '@/lib/server-auth'
 import { checkRateLimit } from '@/lib/rate-limit'
-import { trustedMutationOrigin, noStoreJson, readJsonBody, RequestBodyError } from '@/lib/http'
+import { trustedMutationOrigin, readJsonBody, RequestBodyError, requestJson } from '@/lib/http'
 import { isSupportedCountry, isSupportedCurrency } from '@/lib/countries'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getEligibleProviderRules } from '@/lib/provider-rules'
@@ -48,14 +48,14 @@ function sameHistoricalQuote(row:ExistingRouteRow,input:z.infer<typeof schema>,r
 }
 
 export async function POST(request:Request){
-  if(!trustedMutationOrigin(request))return noStoreJson({error:'CROSS_ORIGIN_DENIED'},{status:403})
-  const auth=await authenticatedClient(request);if(!auth)return noStoreJson({error:'UNAUTHORIZED'},{status:401})
-  const rate=await checkRateLimit(request,'payment_write',40,60,auth.user.id)
-  if(!rate.available)return noStoreJson({error:'SERVICE_UNAVAILABLE'},{status:503})
-  if(!rate.allowed)return noStoreJson({error:'RATE_LIMITED'},{status:429,headers:{'Retry-After':String(rate.retryAfter)}})
+  if(!trustedMutationOrigin(request))return requestJson(request, {error:'CROSS_ORIGIN_DENIED'},{status:403})
+  const auth=await authenticatedClient(request);if(!auth)return requestJson(request, {error:'UNAUTHORIZED'},{status:401})
+  const rate=await checkRateLimit(request,'payment_write',40,60,{ subject: auth.user.id })
+  if(!rate.available)return requestJson(request, {error:'SERVICE_UNAVAILABLE'},{status:503})
+  if(!rate.allowed)return requestJson(request, {error:'RATE_LIMITED'},{status:429})
   try{
     const parsed=schema.safeParse(await readJsonBody(request,32_768))
-    if(!parsed.success)return noStoreJson({error:parsed.error.issues[0]?.message||'INVALID_PAYMENT'},{status:400})
+    if(!parsed.success)return requestJson(request, {error:parsed.error.issues[0]?.message||'INVALID_PAYMENT'},{status:400})
     const input=parsed.data;const admin=createAdminClient();let selected:QuoteRoute|null=null
 
     if(input.selectedRouteId){
@@ -64,11 +64,11 @@ export async function POST(request:Request){
         if(existing&&sameHistoricalQuote(existing as ExistingRouteRow,input,input.selectedRouteId))selected=(existing as ExistingRouteRow).route_snapshot
       }
       if(!selected){
-        const rules=await getEligibleProviderRules(input.fromCountry!,input.toCountry!,input.currency,input.recipientCurrency!,input.amount)
-        const fx=input.currency===input.recipientCurrency?null:await getReferenceFx(input.currency,input.recipientCurrency!).catch(()=>null)
-        const routes=buildRoutes(rules,input.amount,input.fromCountry!,input.toCountry!,input.currency===input.recipientCurrency?1:fx?.rate??null)
+        const rules=await getEligibleProviderRules({ fromCountry: input.fromCountry!, toCountry: input.toCountry!, sourceCurrency: input.currency, recipientCurrency: input.recipientCurrency!, amount: input.amount })
+        const fx=input.currency===input.recipientCurrency?null:await getReferenceFx(input.currency,input.recipientCurrency!)
+        const routes=buildRoutes(rules, input.amount, input.fromCountry!, input.toCountry!, input.currency===input.recipientCurrency?1:fx!.rate)
         selected=routes.find(route=>route.id===input.selectedRouteId)||null
-        if(!selected)return noStoreJson({error:'ROUTE_NOT_AVAILABLE'},{status:409})
+        if(!selected)return requestJson(request, {error:'ROUTE_NOT_AVAILABLE'},{status:409})
       }
     }
 
@@ -82,10 +82,10 @@ export async function POST(request:Request){
     })
     if(error)throw error
     if(input.invoiceId&&paymentId){const {error:linkError}=await auth.client.rpc('flowpay_link_invoice_payment',{p_invoice_id:input.invoiceId,p_payment_id:paymentId});if(linkError)throw linkError}
-    return noStoreJson({ok:true,paymentId})
+    return requestJson(request, {ok:true,paymentId})
   }catch(error){
-    if(error instanceof RequestBodyError)return noStoreJson({error:error.code},{status:error.status})
+    if(error instanceof RequestBodyError)return requestJson(request, {error:error.code},{status:error.status})
     await logSystemEvent({level:'error',source:'payments',code:'PAYMENT_SAVE_FAILED',message:error instanceof Error?error.message:String(error),userId:auth.user.id})
-    return noStoreJson({error:'PAYMENT_SAVE_FAILED'},{status:500})
+    return requestJson(request, {error:'PAYMENT_SAVE_FAILED'},{status:500})
   }
 }

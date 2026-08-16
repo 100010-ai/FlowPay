@@ -9,7 +9,7 @@ FlowPay — B2B-сервис для сравнения маршрутов меж
 - Жизненный цикл платежей и счетов проверяется транзакционно; повторные/недопустимые переходы блокируются.
 - API-ключи генерируются криптографически, хранятся только как SHA-256 hash, а hash-колонка не доступна браузеру.
 - Таблица правил маршрутизации больше не раскрывает клиенту комиссии, FX markup, лимиты и route steps; браузеру доступен только минимальный безопасный summary активных партнёров.
-- Сервер поддерживает новый `SUPABASE_SECRET_KEY`; старый `SUPABASE_SERVICE_ROLE_KEY` оставлен только как fallback.
+- Сервер использует только `SUPABASE_SECRET_KEY`; альтернативные серверные ключи не поддерживаются.
 - Добавлен атомарный rate limiter, request ID, ограничение размера JSON body и очистка серверных логов от секретов/банковских данных.
 - Добавлены CSP/HSTS/anti-framing/MIME/permissions security headers.
 - Правила маршрутов и ECB FX кэшируются; внешний FX-запрос имеет timeout.
@@ -38,16 +38,13 @@ NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_YOUR_PUBLIC_KEY
 
 SUPABASE_SECRET_KEY=sb_secret_YOUR_SERVER_KEY
-# Только для старого проекта как fallback:
-# SUPABASE_SERVICE_ROLE_KEY=YOUR_LEGACY_SERVICE_ROLE_KEY
 
 FLOWPAY_ADMIN_USER_IDS=00000000-0000-0000-0000-000000000000
-FLOWPAY_ADMIN_EMAILS=owner@your-domain.com
 NEXT_PUBLIC_APP_URL=https://your-domain.com
 CRON_SECRET=replace-with-a-long-random-secret
 ```
 
-Для `/admin` предпочтительно использовать `FLOWPAY_ADMIN_USER_IDS`: UUID не меняется при смене email. Если список ID непустой, fallback по email полностью отключается. `SUPABASE_SECRET_KEY`, legacy service-role key и `CRON_SECRET` — только серверные секреты. Никогда не добавляй им префикс `NEXT_PUBLIC_` и не коммить реальные значения в Git.
+Для `/admin` используется только `FLOWPAY_ADMIN_USER_IDS`: UUID не меняется при смене email. `SUPABASE_SECRET_KEY` и `CRON_SECRET` — только серверные секреты. Никогда не добавляй им префикс `NEXT_PUBLIC_` и не коммить реальные значения в Git.
 
 ## Настройка базы
 

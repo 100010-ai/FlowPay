@@ -30,7 +30,7 @@ const base = z.object({
   source_updated_at: z.string().datetime().nullable().optional(),
   active: z.boolean().default(true),
 }).refine(value => value.max_amount >= value.min_amount, { message: 'INVALID_AMOUNT_RANGE' })
-const update = base.extend({ id: z.string().uuid() })
+const update = base.safeExtend({ id: z.string().uuid() })
 const remove = z.object({ id: z.string().uuid() })
 const ruleSelect = 'id,provider_code,display_name,from_country,to_country,currencies,fee_percent,fixed_fee,fx_markup_percent,speed_minutes,min_amount,max_amount,priority,reliability_percent,intermediary_banks,route_steps,source,source_updated_at,active,rule_key,created_at'
 

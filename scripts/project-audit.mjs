@@ -80,7 +80,7 @@ for(const sqlFile of ['supabase/schema.sql','supabase/upgrade-v10.sql','supabase
 
 // 5. Environment contract.
 const env=fs.readFileSync(path.join(root,'.env.example'),'utf8')
-for(const key of ['NEXT_PUBLIC_SUPABASE_URL','NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY','SUPABASE_SERVICE_ROLE_KEY']) if(!env.includes(key)) fail(`Missing ${key} in .env.example`)
+for(const key of ['NEXT_PUBLIC_SUPABASE_URL','NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY','SUPABASE_SECRET_KEY','FLOWPAY_ADMIN_USER_IDS','NEXT_PUBLIC_APP_URL','CRON_SECRET']) if(!env.includes(key)) fail(`Missing ${key} in .env.example`)
 
 // 6. Package contract.
 const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'))

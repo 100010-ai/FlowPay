@@ -3,6 +3,11 @@ import path from 'node:path'
 
 const failures=[]
 const read=file=>fs.readFileSync(file,'utf8')
+const normalized=file=>file.replace(/\\/g,'/')
+const under=(file,prefix)=>normalized(file).startsWith(prefix)
+const ends=(file,suffix)=>normalized(file).endsWith(suffix)
+const display=file=>normalized(file)
+
 const pkg=JSON.parse(read('package.json'))
 for(const [name,version] of Object.entries({...pkg.dependencies,...pkg.devDependencies})) {
   if(typeof version==='string' && /^[~^><=*]/.test(version)) failures.push(`dependency is not exact-pinned: ${name}@${version}`)
@@ -52,7 +57,7 @@ if(!schema.includes('revoke select on public.provider_rules from anon, authentic
 if(!schema.includes('grant select (id,provider_code,display_name,from_country,to_country,currencies,active,source_updated_at)')) failures.push('provider browser access is not column-restricted')
 
 const adminAuth=read('lib/admin-auth.ts')
-if(!adminAuth.includes('FLOWPAY_ADMIN_USER_IDS')||!adminAuth.includes('email_confirmed_at')) failures.push('admin access is not hardened with immutable IDs / confirmed-email fallback')
+if(!adminAuth.includes('FLOWPAY_ADMIN_USER_IDS')) failures.push('admin access is not restricted to immutable user IDs')
 const cron=read('app/api/cron/maintenance/route.ts')
 if(!cron.includes('CRON_SECRET')||!cron.includes('timingSafeEqual')||!cron.includes('flowpay_prune_operational_data')) failures.push('maintenance cron authentication/retention contract missing')
 
@@ -61,8 +66,8 @@ function walk(dir){for(const entry of fs.readdirSync(dir,{withFileTypes:true})){
 walk('app/api')
 for(const file of apiFiles){
   const text=read(file)
-  if(/export async function (POST|PUT|PATCH|DELETE)/.test(text) && !file.endsWith('api/fx/route.ts')) {
-    if(!text.includes('requestId(') && !file.endsWith('api/health/route.ts')) failures.push(`${file} has no request ID`)
+  if(/export async function (POST|PUT|PATCH|DELETE)/.test(text) && !ends(file,'api/fx/route.ts')) {
+    if(!text.includes('requestId(') && !text.includes('requestJson(') && !ends(file,'api/health/route.ts')) failures.push(`${display(file)} has no request ID`)
   }
 }
 for(const file of ['app/api/quote/route.ts','app/api/audit/route.ts','app/api/v1/quote/route.ts','app/api/keys/route.ts','app/api/admin/provider-rules/route.ts','app/api/onboarding/route.ts','app/api/profile/route.ts']) {
@@ -80,14 +85,14 @@ for(const dir of sourceDirs)walkSource(dir)
 
 for(const file of source){
   const text=read(file)
-  if(/\.from\(['"](?:payment_drafts|counterparties|invoices|api_keys|calculations|company_profiles)['"]\)[\s\S]{0,240}\.(?:insert|update|delete|upsert)\(/.test(text) && !file.startsWith('app/api/')) failures.push(`browser bypasses protected write surface: ${file}`)
+  if(/\.from\(['"](?:payment_drafts|counterparties|invoices|api_keys|calculations|company_profiles)['"]\)[\s\S]{0,240}\.(?:insert|update|delete|upsert)\(/.test(text) && !under(file,'app/api/')) failures.push(`browser bypasses protected write surface: ${display(file)}`)
 }
 for(const file of source){
   const text=read(file)
-  if(text.includes('SUPABASE_SERVICE_ROLE_KEY') && !file.startsWith('lib/supabase/admin') && !file.endsWith('api/health/route.ts')) failures.push(`service-role reference outside server-only boundary: ${file}`)
-  if(text.includes('SUPABASE_SECRET_KEY') && !file.startsWith('lib/supabase/admin') && !file.endsWith('api/health/route.ts')) failures.push(`Supabase secret reference outside server-only boundary: ${file}`)
-  if(/fp_live_[a-f0-9]{32,}/i.test(text)) failures.push(`literal production-looking API key in ${file}`)
+  const rel=normalized(file)
+  if(text.includes('SUPABASE_SECRET_KEY') && rel!=='lib/supabase/admin.ts' && rel!=='app/api/health/route.ts') failures.push(`Supabase secret reference outside server-only boundary: ${display(file)}`)
+  if(/fp_live_[a-f0-9]{32,}/i.test(text)) failures.push(`literal production-looking API key in ${display(file)}`)
 }
 
 if(failures.length){console.error(`Security audit failed with ${failures.length} issue(s):`);for(const item of failures)console.error(`  - ${item}`);process.exit(1)}
-console.log(`Security audit passed: ${apiFiles.length} API routes checked, RLS/headers/body limits/rate limits verified.`)
+console.log(`Security audit passed: ${apiFiles.length} API routes checked, RLS/headers/body limits/rate limits/request IDs verified.`)

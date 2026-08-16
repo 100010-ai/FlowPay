@@ -16,7 +16,7 @@ export async function GET(){
       currencies:rule.currencies??[],
       source_updated_at:rule.source_updated_at,
     }))
-    return NextResponse.json({providers},{headers:{'Cache-Control':'public, s-maxage=300, stale-while-revalidate=900','X-Content-Type-Options':'nosniff'}})
+    return NextResponse.json({providers},{headers:{'Cache-Control':'public, s-maxage=300','X-Content-Type-Options':'nosniff'}})
   }catch{
     return NextResponse.json({error:'PROVIDERS_UNAVAILABLE'},{status:503,headers:{'Cache-Control':'no-store'}})
   }

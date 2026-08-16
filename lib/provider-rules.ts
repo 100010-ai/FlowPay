@@ -35,7 +35,8 @@ const cachedCorridorRules = unstable_cache(async (fromCountry: string, toCountry
     .in('to_country', [toCountry, '*'])
     .limit(2000)
   if (error) throw error
-  return (data || []) as ProviderRuleRow[]
+  if (!data) throw new Error('PROVIDER_RULES_EMPTY_RESPONSE')
+  return data as ProviderRuleRow[]
 }, ['flowpay-provider-rules-v13'], { revalidate: 60, tags: ['provider-rules'] })
 
 export async function getEligibleProviderRules(input: {
@@ -48,7 +49,8 @@ export async function getEligibleProviderRules(input: {
   const rows = await cachedCorridorRules(input.fromCountry, input.toCountry)
   const required = new Set([input.sourceCurrency, input.recipientCurrency])
   return rows.filter(row => {
-    const currencies = new Set((row.currencies || []).map(value => value.toUpperCase()))
+    if (!Array.isArray(row.currencies)) throw new Error(`PROVIDER_RULE_INVALID_CURRENCIES:${row.id}`)
+    const currencies = new Set(row.currencies.map(value => value.toUpperCase()))
     if ([...required].some(currency => !currencies.has(currency))) return false
     const min = Number(row.min_amount)
     const max = Number(row.max_amount)
@@ -64,7 +66,8 @@ const cachedCoverageRules = unstable_cache(async () => {
     .eq('active', true)
     .limit(5000)
   if (error) throw error
-  return data || []
+  if (!data) throw new Error('PROVIDER_COVERAGE_EMPTY_RESPONSE')
+  return data
 }, ['flowpay-provider-coverage-v13'], { revalidate: 300, tags: ['provider-rules'] })
 
 export async function getProviderCoverage() {
@@ -74,12 +77,12 @@ export async function getProviderCoverage() {
     display_name: rule.display_name,
     from_country: rule.from_country,
     to_country: rule.to_country,
-    currencies: rule.currencies ?? [],
+    currencies: rule.currencies,
   }))
   return {
     providers: new Set(rules.map(rule => rule.provider_code)).size,
     corridors: new Set(rules.map(rule => `${rule.from_country}:${rule.to_country}`)).size,
-    currencies: new Set(rules.flatMap(rule => rule.currencies ?? [])).size,
+    currencies: new Set(rules.flatMap(rule => rule.currencies)).size,
     rules: publicRules,
   }
 }
@@ -99,7 +102,8 @@ const cachedProviderRuleSummaries = unstable_cache(async () => {
     .order('provider_code', { ascending: true })
     .limit(5000)
   if (error) throw error
-  return (data || []) as ProviderRuleSummary[]
+  if (!data) throw new Error('PROVIDER_SUMMARIES_EMPTY_RESPONSE')
+  return data as ProviderRuleSummary[]
 }, ['flowpay-provider-rule-summaries-v13'], { revalidate: 60, tags: ['provider-rules'] })
 
 /**

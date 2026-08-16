@@ -32,9 +32,6 @@ export const currencies = [
   'THB','TJS','TMT','TND','TOP','TRY','TTD','TWD','TZS','UAH','UGX','USD','UYU','UZS','VES','VND','VUV','WST','XAF','XCD','XOF','XPF','YER','ZAR','ZMW','ZWL',
 ] as const
 
-const staticCountryNames: Record<string, string> = {
-  AE: 'United Arab Emirates', AL: 'Albania', AM: 'Armenia', AO: 'Angola', AR: 'Argentina', AT: 'Austria', AU: 'Australia', AZ: 'Azerbaijan', BA: 'Bosnia & Herzegovina', BD: 'Bangladesh', BE: 'Belgium', BG: 'Bulgaria', BH: 'Bahrain', BO: 'Bolivia', BR: 'Brazil', BY: 'Belarus', CA: 'Canada', CH: 'Switzerland', CL: 'Chile', CM: 'Cameroon', CN: 'China', CO: 'Colombia', CR: 'Costa Rica', CY: 'Cyprus', CZ: 'Czechia', DE: 'Germany', DK: 'Denmark', DO: 'Dominican Republic', DZ: 'Algeria', EC: 'Ecuador', EE: 'Estonia', EG: 'Egypt', ES: 'Spain', ET: 'Ethiopia', FI: 'Finland', FR: 'France', GB: 'United Kingdom', GE: 'Georgia', GH: 'Ghana', GR: 'Greece', GT: 'Guatemala', HK: 'Hong Kong', HN: 'Honduras', HR: 'Croatia', HU: 'Hungary', ID: 'Indonesia', IE: 'Ireland', IL: 'Israel', IN: 'India', IS: 'Iceland', IT: 'Italy', JO: 'Jordan', JP: 'Japan', KE: 'Kenya', KG: 'Kyrgyzstan', KH: 'Cambodia', KR: 'South Korea', KW: 'Kuwait', KZ: 'Kazakhstan', LB: 'Lebanon', LK: 'Sri Lanka', LT: 'Lithuania', LU: 'Luxembourg', LV: 'Latvia', MA: 'Morocco', MD: 'Moldova', ME: 'Montenegro', MK: 'North Macedonia', MN: 'Mongolia', MT: 'Malta', MU: 'Mauritius', MX: 'Mexico', MY: 'Malaysia', NG: 'Nigeria', NL: 'Netherlands', NO: 'Norway', NP: 'Nepal', NZ: 'New Zealand', OM: 'Oman', PA: 'Panama', PE: 'Peru', PH: 'Philippines', PK: 'Pakistan', PL: 'Poland', PT: 'Portugal', PY: 'Paraguay', QA: 'Qatar', RO: 'Romania', RS: 'Serbia', RW: 'Rwanda', SA: 'Saudi Arabia', SE: 'Sweden', SG: 'Singapore', SI: 'Slovenia', SK: 'Slovakia', SN: 'Senegal', TH: 'Thailand', TN: 'Tunisia', TR: 'Türkiye', TW: 'Taiwan', TZ: 'Tanzania', UA: 'Ukraine', UG: 'Uganda', US: 'United States', UY: 'Uruguay', UZ: 'Uzbekistan', VE: 'Venezuela', VN: 'Vietnam', ZA: 'South Africa', ZM: 'Zambia', ZW: 'Zimbabwe',
-}
 
 export function localeForLanguage(lang: Language) {
   return localeMap[lang]
@@ -47,12 +44,10 @@ export function countryFlag(code: string) {
 }
 
 export function countryName(code: string, lang: Language) {
-  try {
-    const display = new Intl.DisplayNames([localeMap[lang]], { type: 'region' })
-    return display.of(code.toUpperCase()) || staticCountryNames[code] || code
-  } catch {
-    return staticCountryNames[code] || code
-  }
+  const display = new Intl.DisplayNames([localeMap[lang]], { type: 'region' })
+  const value = display.of(code.toUpperCase())
+  if (!value) throw new Error(`COUNTRY_NAME_UNAVAILABLE:${code}`)
+  return value
 }
 
 export function countryOptions(lang: Language) {
@@ -62,21 +57,17 @@ export function countryOptions(lang: Language) {
 }
 
 export function currencySymbol(code: string, lang: Language) {
-  try {
-    const parts = new Intl.NumberFormat(localeMap[lang], { style: 'currency', currency: code, currencyDisplay: 'narrowSymbol' }).formatToParts(0)
-    return parts.find((part) => part.type === 'currency')?.value || code
-  } catch {
-    return code
-  }
+  const parts = new Intl.NumberFormat(localeMap[lang], { style: 'currency', currency: code, currencyDisplay: 'narrowSymbol' }).formatToParts(0)
+  const value = parts.find((part) => part.type === 'currency')?.value
+  if (!value) throw new Error(`CURRENCY_SYMBOL_UNAVAILABLE:${code}`)
+  return value
 }
 
 export function currencyName(code: string, lang: Language) {
-  try {
-    const parts = new Intl.NumberFormat(localeMap[lang], { style: 'currency', currency: code, currencyDisplay: 'name' }).formatToParts(0)
-    return parts.find((part) => part.type === 'currency')?.value || code
-  } catch {
-    return code
-  }
+  const parts = new Intl.NumberFormat(localeMap[lang], { style: 'currency', currency: code, currencyDisplay: 'name' }).formatToParts(0)
+  const value = parts.find((part) => part.type === 'currency')?.value
+  if (!value) throw new Error(`CURRENCY_NAME_UNAVAILABLE:${code}`)
+  return value
 }
 
 export function currencyOptions(lang: Language) {
@@ -92,7 +83,7 @@ const countryCurrencyMap: Record<string, string> = {
 }
 
 export function defaultCurrencyForCountry(code: string) {
-  return countryCurrencyMap[code.toUpperCase()] || ''
+  return countryCurrencyMap[code.toUpperCase()] ?? null
 }
 
 export function isSupportedCountry(code: string) {

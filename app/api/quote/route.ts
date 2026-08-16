@@ -33,8 +33,8 @@ export async function POST(request: Request) {
 
     const { fromCountry, toCountry, amount, sourceCurrency, recipientCurrency } = parsed.data
     const rules = await getEligibleProviderRules({ fromCountry, toCountry, amount, sourceCurrency, recipientCurrency })
-    const referenceFx = sourceCurrency === recipientCurrency ? null : await getReferenceFx(sourceCurrency, recipientCurrency).catch(() => null)
-    const recipientRate = sourceCurrency === recipientCurrency ? 1 : referenceFx?.rate ?? null
+    const referenceFx = await getReferenceFx(sourceCurrency, recipientCurrency)
+    const recipientRate = referenceFx.rate
     const routes = buildRoutes(rules, amount, fromCountry, toCountry, recipientRate)
     const quoteId = crypto.randomUUID()
     const saving = estimatedSaving(routes)
@@ -56,9 +56,7 @@ export async function POST(request: Request) {
         estimated_saving: saving,
         routes_snapshot: routes,
       })
-      if (persistError) {
-        await logSystemEvent({ level: 'warning', source: 'quote', code: 'QUOTE_HISTORY_SAVE_FAILED', message: persistError.message, userId: auth.user.id, metadata: { requestId: reqId } })
-      }
+      if (persistError) throw persistError
     }
 
     return apiJson({

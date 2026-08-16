@@ -36,10 +36,11 @@ export async function POST(request: Request) {
 
     const admin = createAdminClient()
     const rules = await getEligibleProviderRules({ fromCountry, toCountry, amount, sourceCurrency, recipientCurrency })
-    const referenceFx = sourceCurrency === recipientCurrency ? null : await getReferenceFx(sourceCurrency, recipientCurrency).catch(() => null)
-    const routes = buildRoutes(rules, amount, fromCountry, toCountry, sourceCurrency === recipientCurrency ? 1 : referenceFx?.rate ?? null)
-    const best = routes[0] ?? null
-    const potentialSaving = best ? Math.max(0, Math.round((actualFee - best.fee) * 100) / 100) : 0
+    const referenceFx = await getReferenceFx(sourceCurrency, recipientCurrency)
+    const routes = buildRoutes(rules, amount, fromCountry, toCountry, referenceFx.rate)
+    const best = routes[0]
+    if (!best) throw new Error('NO_ELIGIBLE_PROVIDER_ROUTES')
+    const potentialSaving = Math.max(0, Math.round((actualFee - best.fee) * 100) / 100)
 
     const { error } = await admin.from('audit_requests').insert({
       user_id: auth?.user.id ?? null,
@@ -51,8 +52,8 @@ export async function POST(request: Request) {
       recipient_currency: recipientCurrency,
       actual_fee: actualFee,
       status: 'analyzed',
-      best_provider_code: best?.providerCode ?? null,
-      estimated_best_fee: best?.fee ?? null,
+      best_provider_code: best.providerCode,
+      estimated_best_fee: best.fee,
       potential_saving: potentialSaving,
       estimated_result: routes,
       auto_analyzed_at: new Date().toISOString(),
@@ -62,7 +63,7 @@ export async function POST(request: Request) {
     return apiJson({
       ok: true,
       requestId: reqId,
-      result: { bestProviderCode: best?.providerCode ?? null, estimatedBestFee: best?.fee ?? null, potentialSaving, routes },
+      result: { bestProviderCode: best.providerCode, estimatedBestFee: best.fee, potentialSaving, routes },
     }, 200, { 'X-Request-ID': reqId })
   } catch (error) {
     const bodyError = bodyErrorResponse(error, reqId)

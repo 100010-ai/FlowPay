@@ -5,8 +5,8 @@
 ## Обязательно перед private beta
 
 - [ ] Если база ещё на 1.1: выполнить `supabase/upgrade-v12.sql`, затем `supabase/upgrade-v13.sql`.
-- [ ] В Vercel задать `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` (или legacy `SUPABASE_SERVICE_ROLE_KEY`).
-- [ ] Задать `FLOWPAY_ADMIN_USER_IDS` для операторов `/admin` (предпочтительно). `FLOWPAY_ADMIN_EMAILS` оставить только как первоначальный fallback.
+- [ ] В Vercel задать `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`.
+- [ ] Задать `FLOWPAY_ADMIN_USER_IDS` для всех операторов `/admin`; email-based доступ не используется.
 - [ ] Задать `NEXT_PUBLIC_APP_URL` на production HTTPS-домен.
 - [ ] Сгенерировать длинный случайный `CRON_SECRET` и добавить его в Vercel для защищённого maintenance cron.
 - [ ] В `/admin` добавить хотя бы одно реальное проверенное платёжное направление с источником и датой обновления.

@@ -9,17 +9,14 @@ export async function logSystemEvent(input: {
   userId?: string | null
   metadata?: Record<string, unknown>
 }) {
-  try {
-    const admin = createAdminClient()
-    await admin.from('system_event_logs').insert({
-      level: input.level,
-      source: redactText(input.source, 80),
-      code: redactText(input.code, 100),
-      message: redactText(input.message || '', 600),
-      user_id: input.userId || null,
-      metadata: sanitizeMetadata(input.metadata || {}),
-    })
-  } catch {
-    // Operational logging is best-effort and must never break product flows.
-  }
+  const admin = createAdminClient()
+  const { error } = await admin.from('system_event_logs').insert({
+    level: input.level,
+    source: redactText(input.source, 80),
+    code: redactText(input.code, 100),
+    message: redactText(input.message ?? '', 600),
+    user_id: input.userId ?? null,
+    metadata: sanitizeMetadata(input.metadata ?? {}),
+  })
+  if (error) throw error
 }

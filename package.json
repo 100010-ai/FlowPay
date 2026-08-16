@@ -1,6 +1,6 @@
 {
   "name": "flowpay",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -8,7 +8,7 @@
     "start": "next start",
     "typecheck": "next typegen && tsc --noEmit",
     "audit:ui": "node scripts/ui-audit.mjs",
-    "audit": "node scripts/ui-audit.mjs && node scripts/commercial-copy-audit.mjs && node scripts/project-audit.mjs && node scripts/backend-audit.mjs && node scripts/runtime-audit.cjs && node scripts/launch-audit.mjs && node scripts/security-audit.mjs && node scripts/performance-audit.mjs",
+    "audit": "node scripts/ui-audit.mjs && node scripts/commercial-copy-audit.mjs && node scripts/project-audit.mjs && node scripts/backend-audit.mjs && node scripts/runtime-audit.cjs && node scripts/launch-audit.mjs && node scripts/security-audit.mjs && node scripts/performance-audit.mjs && node scripts/strict-mode-audit.mjs",
     "audit:runtime": "node scripts/runtime-audit.cjs",
     "cleanup:legacy": "node scripts/cleanup-legacy.mjs",
     "pretypecheck": "npm run cleanup:legacy && npm run cleanup:generated",
@@ -21,7 +21,8 @@
     "audit:security": "node scripts/security-audit.mjs",
     "audit:performance": "node scripts/performance-audit.mjs",
     "audit:deps": "npm audit --omit=dev --audit-level=high",
-    "load:smoke": "node scripts/load-smoke.mjs"
+    "load:smoke": "node scripts/load-smoke.mjs",
+    "audit:strict": "node scripts/strict-mode-audit.mjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "5.2.6",
@@ -36,19 +37,24 @@
     "react-is": "19.1.1",
     "recharts": "3.10.1",
     "tailwind-merge": "3.3.1",
-    "zod": "4.1.5"
+    "zod": "4.1.5",
+    "sharp": "0.35.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.1.10",
     "@types/node": "22.14.0",
     "@types/react": "19.1.10",
     "@types/react-dom": "19.1.7",
-    "postcss": "8.5.6",
+    "postcss": "8.5.25",
     "tailwindcss": "4.1.10",
     "typescript": "5.9.2"
   },
   "engines": {
-    "node": ">=20.0.0 <25"
+    "node": ">=20.9.0 <25"
   },
-  "packageManager": "npm@10.9.2"
+  "packageManager": "npm@10.9.2",
+  "overrides": {
+    "postcss": "$postcss",
+    "sharp": "$sharp"
+  }
 }

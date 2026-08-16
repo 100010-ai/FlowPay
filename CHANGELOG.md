@@ -25,7 +25,7 @@
 - Added lazy-loaded chart bundles so Recharts does not inflate the initial workspace JavaScript unnecessarily.
 - Added a bounded in-process hot-burst prefilter ahead of the authoritative database rate limiter to reduce write amplification during abuse.
 - Restricted authenticated `provider_rules` reads to non-pricing summary columns; fee/FX/limit/route internals stay server-only.
-- Hardened `/admin` with preferred immutable user-ID allowlisting and confirmed-email fallback.
+- Hardened `/admin` with immutable user-ID allowlisting only.
 - Added retention indexes and removed the obsolete v1.2 event-per-request rate-limit table.
 - Added protected daily maintenance cron and optional quote-engine Preview load-smoke testing.
 
@@ -45,7 +45,7 @@
 - Added strict payment transitions including failed and cancelled states, plus invoice synchronization.
 - Added authenticated profile updates, password recovery and irreversible account deletion with explicit confirmation.
 - Added privacy, terms and security pages, robots, sitemap and web manifest for launch packaging.
-- Removed zero-value backend fallbacks from public payment coverage when the service is unavailable.
+- Public payment coverage now fails explicitly when required backend data is unavailable.
 - Added launch/environment audits, deployment checklist and legal-review handoff.
 - No demo pricing, providers or financial records are inserted by this release.
 

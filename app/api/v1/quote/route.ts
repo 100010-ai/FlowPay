@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     const lastUsed = key.last_used_at ? new Date(key.last_used_at).getTime() : 0
     if (!lastUsed || now - lastUsed > 5 * 60_000) {
       const { error: touchError } = await admin.from('api_keys').update({ last_used_at: new Date(now).toISOString() }).eq('id', key.id)
-      if (touchError) await logSystemEvent({ level: 'warning', source: 'api_v1_quote', code: 'API_KEY_TOUCH_FAILED', userId, metadata: { requestId: reqId, keyId: key.id } })
+      if (touchError) throw touchError
     }
 
     const parsed = quoteSchema.safeParse(await readJsonBody(request, 16_384))
@@ -70,8 +70,8 @@ export async function POST(request: Request) {
 
     const { fromCountry, toCountry, amount, sourceCurrency, recipientCurrency } = parsed.data
     const rules = await getEligibleProviderRules({ fromCountry, toCountry, amount, sourceCurrency, recipientCurrency })
-    const referenceFx = sourceCurrency === recipientCurrency ? null : await getReferenceFx(sourceCurrency, recipientCurrency).catch(() => null)
-    const recipientRate = sourceCurrency === recipientCurrency ? 1 : referenceFx?.rate ?? null
+    const referenceFx = await getReferenceFx(sourceCurrency, recipientCurrency)
+    const recipientRate = referenceFx.rate
     const routes = buildRoutes(rules, amount, fromCountry, toCountry, recipientRate)
 
     return respond({

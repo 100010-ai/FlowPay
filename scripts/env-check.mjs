@@ -23,7 +23,7 @@ function parseEnvFile(file) {
   return out
 }
 
-const mode = process.env.NODE_ENV || 'development'
+const mode = process.env.NODE_ENV?.trim() || 'development'
 const cwd = process.cwd()
 const fileEnv = {}
 for (const name of [
@@ -35,10 +35,8 @@ for (const name of [
 
 // Real shell/CI/Vercel variables always win over local files.
 const env = { ...fileEnv, ...process.env }
-const required = ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'NEXT_PUBLIC_APP_URL']
+const required = ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'NEXT_PUBLIC_APP_URL', 'SUPABASE_SECRET_KEY', 'FLOWPAY_ADMIN_USER_IDS', 'CRON_SECRET']
 const missing = required.filter(key => !env[key]?.trim())
-if (!env.SUPABASE_SECRET_KEY && !env.SUPABASE_SERVICE_ROLE_KEY) missing.push('SUPABASE_SECRET_KEY (or legacy SUPABASE_SERVICE_ROLE_KEY)')
-if (!env.FLOWPAY_ADMIN_USER_IDS && !env.FLOWPAY_ADMIN_EMAILS) missing.push('FLOWPAY_ADMIN_USER_IDS (or fallback FLOWPAY_ADMIN_EMAILS)')
 if (missing.length) {
   console.error(`Environment check: FAIL\nMissing: ${missing.join(', ')}`)
   process.exit(1)
@@ -49,9 +47,7 @@ const placeholderPatterns = [
   /YOUR_PROJECT/i,
   /YOUR_PUBLIC_KEY/i,
   /YOUR_SERVER_KEY/i,
-  /YOUR_LEGACY_SERVICE_ROLE_KEY/i,
   /your-domain\.com/i,
-  /owner@your-domain\.com/i,
   /replace-with-a-long-random-secret/i,
 ]
 for (const [key, value] of Object.entries(env)) {
@@ -78,7 +74,4 @@ if (errors.length) {
   console.error(`Environment check: FAIL\n- ${errors.join('\n- ')}`)
   process.exit(1)
 }
-if (!env.SUPABASE_SECRET_KEY && env.SUPABASE_SERVICE_ROLE_KEY) console.warn('Environment check: legacy SUPABASE_SERVICE_ROLE_KEY is configured; migrate to SUPABASE_SECRET_KEY when available.')
-if (!env.FLOWPAY_ADMIN_USER_IDS && env.FLOWPAY_ADMIN_EMAILS) console.warn('Environment check: admin access uses confirmed-email fallback. Prefer FLOWPAY_ADMIN_USER_IDS before production.')
-if (!env.CRON_SECRET) console.warn('Environment check: CRON_SECRET is not set; scheduled operational-data pruning will return 401 until configured.')
 console.log('Environment check: PASS')
