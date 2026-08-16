@@ -35,6 +35,32 @@ export function apiJson(body: unknown, status = 200, headers: HeadersInit = {}) 
   })
 }
 
+/**
+ * Backwards-compatible no-cache JSON helper used by API route handlers.
+ * Supports both `noStoreJson(body, 201, headers)` and the native-style
+ * `noStoreJson(body, { status: 201, headers })` call shape.
+ */
+export function noStoreJson(body: unknown, status?: number, headers?: HeadersInit): NextResponse
+export function noStoreJson(body: unknown, init?: ResponseInit): NextResponse
+export function noStoreJson(
+  body: unknown,
+  statusOrInit: number | ResponseInit = 200,
+  extraHeaders: HeadersInit = {},
+) {
+  if (typeof statusOrInit === 'number') {
+    return apiJson(body, statusOrInit, extraHeaders)
+  }
+
+  const headers = new Headers(statusOrInit.headers)
+  headers.set('Cache-Control', 'no-store')
+  for (const [key, value] of new Headers(extraHeaders).entries()) headers.set(key, value)
+
+  return NextResponse.json(body, {
+    ...statusOrInit,
+    headers,
+  })
+}
+
 export function bodyErrorResponse(error: unknown, reqId?: string) {
   if (error instanceof RequestBodyError) return apiJson({ error: error.code, ...(reqId ? { requestId: reqId } : {}) }, error.status, reqId ? { 'X-Request-ID': reqId } : {})
   return null

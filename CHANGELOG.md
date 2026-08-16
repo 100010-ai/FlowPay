@@ -1,11 +1,13 @@
 # FlowPay changelog
 
-## 1.3.1
+## 1.3.2
 
-- Fixed authenticated workspace prerendering so `next build` no longer instantiates the browser Supabase client while rendering `/admin` and other workspace routes.
-- Added an ASCII-only Windows `START.bat` launcher to avoid broken Cyrillic/encoding tokens being executed as commands by `cmd.exe`.
-- The Windows launcher validates Node.js, creates `.env.local` from `.env.example` when missing, validates the environment, installs dependencies when needed, and starts the development server.
-- Fixed `npm run check:env` so it reads local `.env*` files instead of checking only already-exported shell variables, and rejects untouched example placeholders.
+- Restored the `noStoreJson` HTTP helper expected by the newer payment API routes, with compatibility for both numeric status and `ResponseInit` call styles.
+- Added cached `getProviderRuleSummaries()` for the provider API, returning active non-pricing route metadata only.
+- Kept provider pricing, fees, limits and routing internals server-only.
+- Made the launch audit version-safe so patch releases no longer fail solely because the package version changed.
+- Added launch-audit guards for the API helper exports that caused the Vercel import failures.
+- Includes the v1.3.1 startup/prerender fixes: ASCII-safe Windows launcher, environment placeholder checks and lazy browser-only Supabase workspace initialization.
 
 ## 1.3.0
 

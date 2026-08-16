@@ -1,6 +1,6 @@
 import { unstable_cache, revalidateTag } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { RouteStep } from '@/lib/types'
+import type { ProviderRuleSummary, RouteStep } from '@/lib/types'
 
 export type ProviderRuleRow = {
   id: string
@@ -86,4 +86,26 @@ export async function getProviderCoverage() {
 
 export function invalidateProviderRuleCache() {
   revalidateTag('provider-rules')
+}
+
+
+const cachedProviderRuleSummaries = unstable_cache(async () => {
+  const admin = createAdminClient()
+  const { data, error } = await admin
+    .from('provider_rules')
+    .select('id,provider_code,display_name,from_country,to_country,currencies,active,source_updated_at')
+    .eq('active', true)
+    .order('priority', { ascending: true })
+    .order('provider_code', { ascending: true })
+    .limit(5000)
+  if (error) throw error
+  return (data || []) as ProviderRuleSummary[]
+}, ['flowpay-provider-rule-summaries-v13'], { revalidate: 60, tags: ['provider-rules'] })
+
+/**
+ * Returns provider-rule metadata for API/UI consumers without exposing fees,
+ * internal routing weights, or other sensitive rule fields.
+ */
+export async function getProviderRuleSummaries() {
+  return cachedProviderRuleSummaries()
 }
