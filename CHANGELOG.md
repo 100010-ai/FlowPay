@@ -1,5 +1,12 @@
 # FlowPay changelog
 
+## 1.3.1
+
+- Fixed authenticated workspace prerendering so `next build` no longer instantiates the browser Supabase client while rendering `/admin` and other workspace routes.
+- Added an ASCII-only Windows `START.bat` launcher to avoid broken Cyrillic/encoding tokens being executed as commands by `cmd.exe`.
+- The Windows launcher validates Node.js, creates `.env.local` from `.env.example` when missing, validates the environment, installs dependencies when needed, and starts the development server.
+- Fixed `npm run check:env` so it reads local `.env*` files instead of checking only already-exported shell variables, and rejects untouched example placeholders.
+
 ## 1.3.0
 
 - Upgraded Recharts from the deprecated 2.x branch to 3.10.1.

@@ -39,7 +39,11 @@ type Job = { name: JobName; promise: PromiseLike<any> }
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
-  const supabase = useMemo(() => createClient(), [])
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null)
+  const getSupabase = useCallback(() => {
+    if (!supabaseRef.current) supabaseRef.current = createClient()
+    return supabaseRef.current
+  }, [])
   const loadedAt = useRef<Partial<Record<JobName, number>>>({})
   const authCache = useRef<{ user: User | null; validatedAt: number }>({ user: null, validatedAt: 0 })
   const loadedLimit = useRef<Partial<Record<JobName, number>>>({})
@@ -51,6 +55,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const load = useCallback(async (initial = false, force = false) => {
     setState(s => ({ ...s, ...(initial ? { loading: true } : force ? { refreshing: true } : {}), error: null }))
     try {
+      const supabase = getSupabase()
       let user = authCache.current.user
       const mustValidateAuth = force || !user || Date.now() - authCache.current.validatedAt > 60_000
       if (mustValidateAuth) {
@@ -126,20 +131,27 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     } catch (error) {
       setState(s => ({ ...s, loading: false, refreshing: false, error: error instanceof Error ? error.message : 'WORKSPACE_LOAD_FAILED' }))
     }
-  }, [pathname, router, supabase])
+  }, [pathname, router, getSupabase])
 
   useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+    let unsubscribe: (() => void) | undefined
+    try {
+      const supabase = getSupabase()
+      const { data } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT' || !session?.user) {
         authCache.current = { user: null, validatedAt: 0 }
         if (event === 'SIGNED_OUT') router.replace('/login')
         return
       }
       authCache.current = { user: session.user, validatedAt: Date.now() }
-      setState(current => current.user?.id === session.user.id ? current : { ...current, user: session.user })
-    })
-    return () => data.subscription.unsubscribe()
-  }, [router, supabase])
+        setState(current => current.user?.id === session.user.id ? current : { ...current, user: session.user })
+      })
+      unsubscribe = () => data.subscription.unsubscribe()
+    } catch (error) {
+      setState(current => ({ ...current, loading: false, refreshing: false, error: error instanceof Error ? error.message : 'SUPABASE_CONFIGURATION_ERROR' }))
+    }
+    return () => unsubscribe?.()
+  }, [router, getSupabase])
 
   useEffect(() => {
     const initial = !mounted.current
