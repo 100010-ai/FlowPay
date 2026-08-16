@@ -165,12 +165,13 @@ export type AuditRequest = {
 
 export type ApiKeyRow = { id:string; user_id:string; name:string; key_prefix:string; last_used_at:string|null; created_at:string; revoked_at:string|null }
 export type WorkspaceInvitation = { id:string; owner_user_id:string; email:string; role:'admin'|'finance_manager'|'analyst'|'viewer'; status:'pending'|'accepted'|'cancelled'; created_at:string; accepted_at:string|null }
-export type ProviderRuleSummary = { id:string; provider_code:string; display_name:string|null; from_country:string; to_country:string; currencies:string[]; active:boolean; source:string|null; source_updated_at:string|null }
+export type ProviderRuleSummary = { id:string; provider_code:string; display_name:string|null; from_country:string; to_country:string; currencies:string[]; active:boolean; source_updated_at:string|null }
 
 export type Invoice = {
   id:string; user_id:string; counterparty_id:string|null; invoice_number:string; supplier_name:string; issue_date:string|null; due_date:string|null;
   amount:number; currency:string; status:'open'|'scheduled'|'paid'|'cancelled'; reference:string; notes:string; payment_draft_id:string|null; created_at:string; updated_at:string;
 }
 
-export type ApiRequestLog = { id:string; user_id:string; endpoint:string; status_code:number; duration_ms:number|null; created_at:string }
+export type ApiRequestLog = { id:string; user_id:string; endpoint:string; status_code:number; duration_ms:number|null; request_id?:string|null; created_at:string }
+export type ApiUsageDaily = { user_id:string; endpoint:string; usage_date:string; request_count:number; success_count:number; error_count:number; total_duration_ms:number; max_duration_ms:number; updated_at:string }
 export type WorkspaceAuditLog = { id:string; user_id:string; entity_type:string; entity_id:string|null; action:string; created_at:string }

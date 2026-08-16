@@ -6,18 +6,16 @@ export function useFxMap(baseCurrency:string|null|undefined,currencies:string[])
   const [state,setState]=useState<RateState>({loading:false,rates:{},missing:[],error:null,date:null})
   const key=useMemo(()=>Array.from(new Set(currencies.filter(Boolean).map(c=>c.toUpperCase()))).sort().join(','),[currencies])
   useEffect(()=>{
-    let cancelled=false
-    if(!baseCurrency){setState({loading:false,rates:{},missing:[],error:null,date:null});return}
-    const base=baseCurrency.toUpperCase();const list=key?key.split(','):[]
-    const targets=Array.from(new Set(list));
+    const controller=new AbortController()
+    if(!baseCurrency){setState({loading:false,rates:{},missing:[],error:null,date:null});return()=>controller.abort()}
+    const base=baseCurrency.toUpperCase();const targets=key?key.split(','):[]
+    if(!targets.length){setState({loading:false,rates:{},missing:[],error:null,date:null});return()=>controller.abort()}
     setState(s=>({...s,loading:true,error:null}))
-    Promise.all(targets.map(async source=>{
-      if(source===base)return {source,rate:1,date:null as string|null}
-      const response=await fetch(`/api/fx?source=${encodeURIComponent(source)}&target=${encodeURIComponent(base)}`)
-      if(!response.ok)return {source,rate:null,date:null}
-      const data=await response.json();return {source,rate:Number(data.rate),date:data.date as string|null}
-    })).then(rows=>{if(cancelled)return;const rates:Record<string,number>={};const missing:string[]=[];let date:string|null=null;for(const row of rows){if(typeof row.rate==='number'&&Number.isFinite(row.rate)){rates[row.source]=row.rate;if(row.date)date=row.date}else missing.push(row.source)}setState({loading:false,rates,missing,error:null,date})}).catch(err=>{if(!cancelled)setState({loading:false,rates:{},missing:targets,error:err instanceof Error?err.message:'FX_FAILED',date:null})})
-    return()=>{cancelled=true}
+    fetch(`/api/fx?sources=${encodeURIComponent(targets.join(','))}&target=${encodeURIComponent(base)}`,{signal:controller.signal})
+      .then(async response=>{if(!response.ok)throw new Error('FX_FAILED');return response.json()})
+      .then(data=>{if(controller.signal.aborted)return;const rates:Record<string,number>={};for(const [code,value] of Object.entries(data.rates||{})){const rate=Number(value);if(Number.isFinite(rate)&&rate>0)rates[code]=rate}setState({loading:false,rates,missing:Array.isArray(data.missing)?data.missing:[],error:null,date:typeof data.date==='string'?data.date:null})})
+      .catch(error=>{if(controller.signal.aborted)return;setState({loading:false,rates:{},missing:targets,error:error instanceof Error?error.message:'FX_FAILED',date:null})})
+    return()=>controller.abort()
   },[baseCurrency,key])
   return state
 }

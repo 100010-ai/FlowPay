@@ -1,40 +1,42 @@
-# FlowPay 1.2 — launch checklist
+# FlowPay 1.3 — чеклист перед запуском
 
-The repository now contains the product pieces that can be completed without your legal entity, domain, mail provider or payment-provider contracts.
+Кодовая часть, которую можно закрыть без твоего юрлица, домена и договоров с платёжными партнёрами, подготовлена. Перед закрытой бетой пройди пункты ниже.
 
-## Required before private beta
+## Обязательно перед private beta
 
-- [ ] Run `supabase/upgrade-v12.sql` after the v1.1 migration.
-- [ ] Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY` in Vercel.
-- [ ] Set `FLOWPAY_ADMIN_EMAILS` to the operator accounts that may open `/admin`.
-- [ ] Set `NEXT_PUBLIC_APP_URL` to the production HTTPS domain.
-- [ ] Configure at least one verified real payment corridor in `/admin` with source/date information.
-- [ ] Verify email authentication settings and your production redirect URL. Configure production SMTP so signup/reset emails do not depend on development mail limits.
-- [ ] Enable the authentication abuse-protection options appropriate for your launch (for example CAPTCHA/bot protection) in your auth provider.
-- [ ] Have `/privacy`, `/terms`, and `/security` reviewed for your legal entity, target jurisdictions and actual provider agreements. See `LEGAL_REVIEW_REQUIRED.md`.
-- [ ] Add a real support/privacy/security email on your domain.
-- [ ] Run `npm run check:env`, `npm run audit`, `npm run typecheck`, and `npm run build`.
-- [ ] Deploy to a Vercel Preview URL and complete the smoke flow below before production.
+- [ ] Если база ещё на 1.1: выполнить `supabase/upgrade-v12.sql`, затем `supabase/upgrade-v13.sql`.
+- [ ] В Vercel задать `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` (или legacy `SUPABASE_SERVICE_ROLE_KEY`).
+- [ ] Задать `FLOWPAY_ADMIN_USER_IDS` для операторов `/admin` (предпочтительно). `FLOWPAY_ADMIN_EMAILS` оставить только как первоначальный fallback.
+- [ ] Задать `NEXT_PUBLIC_APP_URL` на production HTTPS-домен.
+- [ ] Сгенерировать длинный случайный `CRON_SECRET` и добавить его в Vercel для защищённого maintenance cron.
+- [ ] В `/admin` добавить хотя бы одно реальное проверенное платёжное направление с источником и датой обновления.
+- [ ] Настроить production SMTP, подтверждение email и корректные redirect URL для регистрации/сброса пароля.
+- [ ] Включить подходящую защиту Auth от ботов/злоупотреблений.
+- [ ] Проверить `/privacy`, `/terms`, `/security` под реальное юрлицо, страны работы и договоры. См. `LEGAL_REVIEW_REQUIRED.md`.
+- [ ] Добавить реальные `support@`, `privacy@`, `security@` на своём домене.
+- [ ] Выполнить `npm run check:env`, `npm run audit`, `npm run typecheck`, `npm run build`, `npm run audit:deps`.
+- [ ] Сначала задеплоить Preview и пройти smoke flow ниже.
 
 ## Smoke flow
 
-1. Create a new user and confirm email if confirmation is enabled.
-2. Complete `/onboarding` and verify dashboard reporting currency.
-3. Create a counterparty with valid bank details.
-4. Create an invoice.
-5. Create a payment from the invoice.
-6. Request a route and verify only configured provider rules are returned.
-7. Move payment `draft → ready → paid → received`; confirm linked invoice becomes paid.
-8. Create/revoke an API key and call `POST /api/v1/quote`.
-9. Export Payments/Reports CSV and verify values.
-10. Open `/status` and verify core systems show operational.
-11. Open `/admin` with an operator account and verify route-rule CRUD.
-12. Test desktop and mobile viewport, logout/login, empty states and rate-limit error handling.
+1. Зарегистрировать нового пользователя и подтвердить email, если подтверждение включено.
+2. Пройти `/onboarding` и проверить базовую валюту Dashboard.
+3. Создать контрагента с валидными банковскими реквизитами.
+4. Создать счёт.
+5. Создать платёж из счёта.
+6. Запросить маршрут и убедиться, что возвращаются только реально настроенные правила.
+7. Провести платёж `draft → ready → paid → received` и проверить синхронизацию связанного счёта.
+8. Создать API-ключ, вызвать `POST /api/v1/quote`, затем отозвать ключ.
+9. Проверить CSV-импорт контрагентов/счетов и экспорт Payments/Reports.
+10. Открыть `/status` и проверить основные системы.
+11. Открыть `/admin` операторским аккаунтом и проверить CRUD платёжных правил.
+12. Проверить desktop/mobile, logout/login, пустые состояния и rate-limit ошибки.
+13. На Preview выполнить `npm run load:smoke` с безопасной тестовой нагрузкой и проверить p95/error rate.
 
-## External work FlowPay cannot complete by code alone
+## Что остаётся внешней работой
 
-- A licensed payment provider/PSP contract if you want FlowPay to execute or custody funds.
-- Legal review and jurisdiction-specific Terms/Privacy/compliance language.
-- Domain ownership, DNS, company email and support process.
-- Real provider tariffs/APIs and commercial permission to display or route through them.
-- Production incident monitoring destination (for example Sentry/Datadog) if you want alerts outside the built-in event log.
+- Договор с лицензированным PSP/платёжным партнёром, если FlowPay будет реально исполнять или хранить деньги.
+- Юридическая проверка Terms/Privacy/compliance под конкретные юрисдикции.
+- Домен, DNS, корпоративная почта и процесс поддержки.
+- Реальные тарифы/API провайдеров и коммерческое разрешение использовать их данные.
+- Внешняя система оповещений об инцидентах, если нужны уведомления вне встроенного журнала/Vercel.

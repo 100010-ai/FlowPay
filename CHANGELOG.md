@@ -1,5 +1,25 @@
 # FlowPay changelog
 
+## 1.3.0
+
+- Upgraded Recharts from the deprecated 2.x branch to 3.10.1.
+- Added CSP/HSTS/anti-framing/permissions headers, request IDs, body-size limits and redacted backend logging.
+- Replaced event-per-request rate limiting with an atomic fixed-window counter.
+- Revoked direct authenticated browser mutations for payments, invoices, counterparties, API keys and calculations; validated SECURITY DEFINER RPCs now enforce ownership and lifecycle rules.
+- Hid API-key hashes from browser-readable columns.
+- Added atomic CSV import RPCs with a 500-row bound.
+- Added provider-rule caching, cached health checks, ECB timeout handling and sampled detailed API logs with exact daily usage counters.
+- Added query-pattern indexes, operational-data pruning, route-aware workspace loading, CI, Dependabot, security/performance audits and a load-smoke utility.
+- Localized the public service-status page and removed deployment-variable wording from the operator UI.
+- Added `react-is` 19.1.1 for the Recharts v3 peer contract and exact-pinned all direct dependencies/package-manager version to reduce surprise upgrades.
+- Batched workspace FX lookups into one browser request instead of one request per currency.
+- Added lazy-loaded chart bundles so Recharts does not inflate the initial workspace JavaScript unnecessarily.
+- Added a bounded in-process hot-burst prefilter ahead of the authoritative database rate limiter to reduce write amplification during abuse.
+- Restricted authenticated `provider_rules` reads to non-pricing summary columns; fee/FX/limit/route internals stay server-only.
+- Hardened `/admin` with preferred immutable user-ID allowlisting and confirmed-email fallback.
+- Added retention indexes and removed the obsolete v1.2 event-per-request rate-limit table.
+- Added protected daily maintenance cron and optional quote-engine Preview load-smoke testing.
+
 ## 1.2.1
 
 - Fixed admin route-rule editor TypeScript state inference for nullable fields.

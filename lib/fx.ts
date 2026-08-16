@@ -33,7 +33,7 @@ async function eurRate(currency: string) {
   if (currency === 'EUR') return { rate: 1, date: new Date().toISOString().slice(0,10) }
   if (!ECB_SUPPORTED.has(currency)) return null
   const url = `https://data-api.ecb.europa.eu/service/data/EXR/D.${currency}.EUR.SP00.A?lastNObservations=1&detail=dataonly&format=csvdata`
-  const response = await fetch(url, { next: { revalidate: 3600 * 6 }, headers: { Accept: 'text/csv' } })
+  const response = await fetch(url, { next: { revalidate: 3600 * 6 }, headers: { Accept: 'text/csv' }, signal: AbortSignal.timeout(5_000) })
   if (!response.ok) return null
   const rows = csvRows(await response.text())
   const row = rows[0]

@@ -1,6 +1,6 @@
 import { LegalPage } from '@/components/LegalPage'
 const title={ru:'Безопасность FlowPay',en:'FlowPay Security'}
-const updated={ru:'Практики продукта · версия 1.2',en:'Product practices · version 1.2'}
+const updated={ru:'Практики продукта · версия 1.3',en:'Product practices · version 1.3'}
 const sections={
  ru:[
   {title:'Изоляция данных',body:['Данные аккаунтов ограничиваются политиками доступа на уровне базы данных. Серверные административные ключи не передаются в браузер и используются только серверными обработчиками.']},

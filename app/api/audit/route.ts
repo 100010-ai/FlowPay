@@ -1,67 +1,48 @@
-import { NextResponse } from 'next/server'
 import { logSystemEvent } from '@/lib/server-log'
 import { checkRateLimit } from '@/lib/rate-limit'
-import { createServerClient } from '@/lib/supabase/server'
+import { authenticatedClient } from '@/lib/server-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { buildRoutes } from '@/lib/routing'
 import { auditSchema } from '@/lib/validation'
 import { getReferenceFx } from '@/lib/fx'
+import { getEligibleProviderRules } from '@/lib/provider-rules'
+import { apiJson, bodyErrorResponse, readJsonBody, requestId } from '@/lib/http'
+import { safeErrorMessage } from '@/lib/security'
 
 export const dynamic = 'force-dynamic'
 
-function getBearer(request: Request) {
-  const header = request.headers.get('authorization') || ''
-  return header.startsWith('Bearer ') ? header.slice(7) : undefined
-}
-
 export async function POST(request: Request) {
-  const rate = await checkRateLimit(request, 'public_audit', 10, 300)
-  if (!rate.available) return NextResponse.json({ error: 'SERVICE_UNAVAILABLE' }, { status: 503 })
-  if (!rate.allowed) return NextResponse.json({ error: 'RATE_LIMITED' }, { status: 429, headers: { 'Retry-After': '300' } })
+  const reqId = requestId(request)
+  const rate = await checkRateLimit(request, 'public_audit_network', 10, 300)
+  if (!rate.available) return apiJson({ error: 'SERVICE_UNAVAILABLE', requestId: reqId }, 503, { 'X-Request-ID': reqId })
+  if (!rate.allowed) return apiJson({ error: 'RATE_LIMITED', requestId: reqId }, 429, { 'Retry-After': '300', 'X-Request-ID': reqId })
+
   try {
-    const parsed = auditSchema.safeParse(await request.json())
+    const parsed = auditSchema.safeParse(await readJsonBody(request, 24_576))
     if (!parsed.success) {
-      const issue = parsed.error.issues.find((item) =>
-        ['SAME_COUNTRY', 'FEE_EXCEEDS_AMOUNT'].includes(item.message),
-      )
-      return NextResponse.json({ error: issue?.message || 'INVALID_PARAMETERS' }, { status: 400 })
+      const issue = parsed.error.issues.find(item => ['SAME_COUNTRY', 'FEE_EXCEEDS_AMOUNT'].includes(item.message))
+      return apiJson({ error: issue?.message || 'INVALID_PARAMETERS', requestId: reqId }, 400, { 'X-Request-ID': reqId })
     }
 
     const { email, fromCountry, toCountry, sourceCurrency, recipientCurrency, amount, actualFee, website } = parsed.data
-    if (website) return NextResponse.json({ ok: true })
+    if (website) return apiJson({ ok: true, requestId: reqId }, 200, { 'X-Request-ID': reqId })
 
-    const accessToken = getBearer(request)
-    const admin = createAdminClient()
-    let userId: string | null = null
-    if (accessToken) {
-      const authClient = createServerClient(accessToken)
-      const { data: auth } = await authClient.auth.getUser(accessToken)
-      userId = auth.user?.id ?? null
+    const auth = await authenticatedClient(request)
+    if (auth) {
+      const userRate = await checkRateLimit(request, 'public_audit_user', 30, 300, { subject: auth.user.id })
+      if (!userRate.available) return apiJson({ error: 'SERVICE_UNAVAILABLE', requestId: reqId }, 503, { 'X-Request-ID': reqId })
+      if (!userRate.allowed) return apiJson({ error: 'RATE_LIMITED', requestId: reqId }, 429, { 'Retry-After': '300', 'X-Request-ID': reqId })
     }
 
-    const { data: rules, error: rulesError } = await admin
-      .from('provider_rules')
-      .select(
-        'id,provider_code,display_name,from_country,to_country,fee_percent,fixed_fee,fx_markup_percent,speed_minutes,priority,reliability_percent,intermediary_banks,route_steps,source,source_updated_at',
-      )
-      .eq('active', true)
-      .in('from_country', [fromCountry, '*'])
-      .in('to_country', [toCountry, '*'])
-      .contains('currencies', Array.from(new Set([sourceCurrency, recipientCurrency])))
-      .lte('min_amount', amount)
-      .gte('max_amount', amount)
-
-    if (rulesError) throw rulesError
-
+    const admin = createAdminClient()
+    const rules = await getEligibleProviderRules({ fromCountry, toCountry, amount, sourceCurrency, recipientCurrency })
     const referenceFx = sourceCurrency === recipientCurrency ? null : await getReferenceFx(sourceCurrency, recipientCurrency).catch(() => null)
-    const routes = buildRoutes(rules ?? [], amount, fromCountry, toCountry, sourceCurrency === recipientCurrency ? 1 : referenceFx?.rate ?? null)
+    const routes = buildRoutes(rules, amount, fromCountry, toCountry, sourceCurrency === recipientCurrency ? 1 : referenceFx?.rate ?? null)
     const best = routes[0] ?? null
-    const potentialSaving = best
-      ? Math.max(0, Math.round((actualFee - best.fee) * 100) / 100)
-      : 0
+    const potentialSaving = best ? Math.max(0, Math.round((actualFee - best.fee) * 100) / 100) : 0
 
     const { error } = await admin.from('audit_requests').insert({
-      user_id: userId,
+      user_id: auth?.user.id ?? null,
       email,
       from_country: fromCountry,
       to_country: toCountry,
@@ -76,21 +57,17 @@ export async function POST(request: Request) {
       estimated_result: routes,
       auto_analyzed_at: new Date().toISOString(),
     })
-
     if (error) throw error
 
-    return NextResponse.json({
+    return apiJson({
       ok: true,
-      result: {
-        bestProviderCode: best?.providerCode ?? null,
-        estimatedBestFee: best?.fee ?? null,
-        potentialSaving,
-        routes,
-      },
-    })
+      requestId: reqId,
+      result: { bestProviderCode: best?.providerCode ?? null, estimatedBestFee: best?.fee ?? null, potentialSaving, routes },
+    }, 200, { 'X-Request-ID': reqId })
   } catch (error) {
-    console.error('audit error', error)
-    await logSystemEvent({ level:'error', source:'audit', code:'AUDIT_FAILED', message:error instanceof Error?error.message:String(error) })
-    return NextResponse.json({ error: 'AUDIT_FAILED' }, { status: 500 })
+    const bodyError = bodyErrorResponse(error, reqId)
+    if (bodyError) return bodyError
+    await logSystemEvent({ level: 'error', source: 'audit', code: 'AUDIT_FAILED', message: safeErrorMessage(error), metadata: { requestId: reqId } })
+    return apiJson({ error: 'AUDIT_FAILED', requestId: reqId }, 500, { 'X-Request-ID': reqId })
   }
 }

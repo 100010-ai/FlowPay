@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { redactText, sanitizeMetadata } from '@/lib/security'
 
 export async function logSystemEvent(input: {
   level: 'info' | 'warning' | 'error'
@@ -12,13 +13,13 @@ export async function logSystemEvent(input: {
     const admin = createAdminClient()
     await admin.from('system_event_logs').insert({
       level: input.level,
-      source: input.source,
-      code: input.code,
-      message: (input.message || '').slice(0, 600),
+      source: redactText(input.source, 80),
+      code: redactText(input.code, 100),
+      message: redactText(input.message || '', 600),
       user_id: input.userId || null,
-      metadata: input.metadata || {},
+      metadata: sanitizeMetadata(input.metadata || {}),
     })
-  } catch (error) {
-    console.error('system event logging failed', error)
+  } catch {
+    // Operational logging is best-effort and must never break product flows.
   }
 }

@@ -26,7 +26,7 @@ for(const required of [
   'app/page.tsx','app/login/page.tsx','app/(workspace)/dashboard/page.tsx','app/(workspace)/payments/page.tsx',
   'app/(workspace)/counterparties/page.tsx','app/(workspace)/routes/page.tsx','app/(workspace)/analytics/page.tsx',
   'app/(workspace)/reports/page.tsx','app/(workspace)/invoices/page.tsx',
-  'app/(workspace)/developer/page.tsx','app/(workspace)/settings/page.tsx','app/(workspace)/admin/page.tsx','app/onboarding/page.tsx','app/reset-password/page.tsx','app/status/page.tsx','app/robots.ts','app/sitemap.ts','app/privacy/page.tsx','app/terms/page.tsx','app/security/page.tsx','app/api/coverage/route.ts','app/api/health/route.ts','supabase/schema.sql','supabase/upgrade-v10.sql','supabase/upgrade-v11.sql','supabase/upgrade-v12.sql'
+  'app/(workspace)/developer/page.tsx','app/(workspace)/settings/page.tsx','app/(workspace)/admin/page.tsx','app/onboarding/page.tsx','app/reset-password/page.tsx','app/status/page.tsx','app/robots.ts','app/sitemap.ts','app/privacy/page.tsx','app/terms/page.tsx','app/security/page.tsx','app/api/coverage/route.ts','app/api/health/route.ts','supabase/schema.sql','supabase/upgrade-v10.sql','supabase/upgrade-v11.sql','supabase/upgrade-v12.sql','supabase/upgrade-v13.sql'
 ]) if(!fs.existsSync(path.join(root,required))) fail(`Missing required file: ${required}`)
 
 // 1b. Critical entry-point export contract.
@@ -72,7 +72,7 @@ const readmeSource=fs.readFileSync(path.join(root,'README.md'),'utf8')
 if(!readmeSource.includes('sourceCurrency')||!readmeSource.includes('recipientCurrency')) fail('README API contract is not dual-currency')
 
 // 4. No provider pricing seeds in schema/upgrade.
-for(const sqlFile of ['supabase/schema.sql','supabase/upgrade-v10.sql','supabase/upgrade-v11.sql','supabase/upgrade-v12.sql']){
+for(const sqlFile of ['supabase/schema.sql','supabase/upgrade-v10.sql','supabase/upgrade-v11.sql','supabase/upgrade-v12.sql','supabase/upgrade-v13.sql']){
   const text=fs.readFileSync(path.join(root,sqlFile),'utf8')
   if(/insert\s+into\s+public\.provider_rules/i.test(text)) fail(`Provider pricing seed found in ${sqlFile}`)
   if(!/enable row level security/i.test(text)) fail(`RLS setup missing from ${sqlFile}`)
@@ -84,7 +84,7 @@ for(const key of ['NEXT_PUBLIC_SUPABASE_URL','NEXT_PUBLIC_SUPABASE_PUBLISHABLE_K
 
 // 6. Package contract.
 const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'))
-if(!/^1\.2\.\d+$/.test(pkg.version)) fail(`package.json version is ${pkg.version}, expected FlowPay 1.2.x`)
+if(!/^1\.3\.\d+$/.test(pkg.version)) fail(`package.json version is ${pkg.version}, expected FlowPay 1.3.x`)
 for(const dep of ['next','react','@supabase/supabase-js','tailwindcss','@tailwindcss/postcss','lucide-react','recharts','country-flag-icons','zod']){
   if(!(dep in (pkg.dependencies||{})) && !(dep in (pkg.devDependencies||{}))) fail(`Missing required dependency: ${dep}`)
 }

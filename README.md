@@ -1,155 +1,135 @@
-# FlowPay 1.2.1
+# FlowPay 1.3
 
-FlowPay is a production-oriented Next.js + Supabase + Vercel workspace for international business-payment operations. Version 1.2.1 is the launch-readiness and production-hardening release built on the commercial 1.1 UI: a denser finance workspace, clearer onboarding, larger typography, customer-facing copy, real database-backed operations, responsive desktop/mobile layouts, and no legacy dark theme.
+FlowPay — B2B-сервис для сравнения маршрутов международных платежей, управления контрагентами, счетами, платежами, отчётами и API-доступом. Версия 1.3 сфокусирована на безопасности, производительности и подготовке к росту нагрузки.
 
-## What is in 1.2.1
+## Что изменилось в 1.3
 
-- Guided `/onboarding` flow with company country, reporting currency and timezone persistence.
-- Operator-only `/admin` console for real payment-corridor rule CRUD and operational events; access is controlled with `FLOWPAY_ADMIN_EMAILS`.
-- Distributed database-backed rate limiting for public audit/quote endpoints and the authenticated quote API.
-- Server-side operational event log for backend failures.
-- Idempotent/transactional payment creation plus server-side counterparty and invoice write RPCs.
-- Strict payment lifecycle including `failed` and `cancelled` states.
-- Public `/status`, `/privacy`, `/terms` and `/security` surfaces.
-- Production security headers and a launch audit/checklist.
+- Recharts обновлён с устаревшей ветки 2.x до `3.10.1`; React/React DOM/React Is закреплены на одной версии.
+- Критические финансовые INSERT/UPDATE/DELETE из браузера отключены. Изменения платежей, контрагентов и счетов выполняются через валидируемые RPC/API с проверкой владельца.
+- Жизненный цикл платежей и счетов проверяется транзакционно; повторные/недопустимые переходы блокируются.
+- API-ключи генерируются криптографически, хранятся только как SHA-256 hash, а hash-колонка не доступна браузеру.
+- Таблица правил маршрутизации больше не раскрывает клиенту комиссии, FX markup, лимиты и route steps; браузеру доступен только минимальный безопасный summary активных партнёров.
+- Сервер поддерживает новый `SUPABASE_SECRET_KEY`; старый `SUPABASE_SERVICE_ROLE_KEY` оставлен только как fallback.
+- Добавлен атомарный rate limiter, request ID, ограничение размера JSON body и очистка серверных логов от секретов/банковских данных.
+- Добавлены CSP/HSTS/anti-framing/MIME/permissions security headers.
+- Правила маршрутов и ECB FX кэшируются; внешний FX-запрос имеет timeout.
+- Workspace загружает данные по вкладкам, повторно использует свежие выборки и ограничивает объём строк.
+- Добавлены индексы под рабочие запросы и отдельные индексы для retention-cleanup больших operational tables.
+- Детальные API-логи семплируются, точная статистика хранится дневными агрегатами.
+- Добавлен защищённый maintenance cron для очистки старых rate-limit/API/system-event записей.
+- Добавлены security/performance audits и безопасный Preview load-smoke test.
+- В CI выполняются audit, typecheck, build и production dependency audit.
 
-- Commercial product polish across every visible workspace tab, with larger controls, clearer spacing and responsive empty/loading/error states.
-- Real payment/invoice lifecycle synchronization, counterparty CRUD/import, API-key lifecycle and activity-center behavior.
-- Authenticated route-comparison history is persisted by the server from the verified quote response; the browser does not write calculated fee/savings snapshots directly.
-- Payments, Counterparties, Invoices and API surfaces include real account KPIs and commercial first-use states instead of diagnostic placeholders.
-- Counterparty deletion is guarded against removing entities with payment or invoice history.
-- Settings payment defaults are persisted into newly created payments.
-- Payment-provider identifiers are presented as human partner names when configured.
-- Team collaboration is intentionally not surfaced until shared-data authorization is production-ready.
-- Next.js App Router + React + TypeScript.
-- Tailwind CSS v4 and local shadcn-style UI primitives.
-- Lucide SVG icons, Inter Variable, Recharts, `country-flag-icons` SVG flags.
-- Supabase Auth, Postgres and Row Level Security. Public pricing/routing rules stay server-side; browser clients do not receive direct anonymous table access.
-- Public landing, localized auth, Overview, Payments, Counterparties, Routes, Analytics, Reports, Invoices, API and Settings.
-- RU / EN / FR / DE / ES interface support.
-- Separate responsive mobile layouts including bottom navigation, card-based payment views, drawers/dialogs and touch-sized controls.
-- Real ECB reference FX through `/api/fx`; ECB rates are always presented as reference data, never as executable quotes.
-- Route Engine uses only active `provider_rules` stored in Supabase. No seeded/demo prices are included.
-- Dual-currency quotes: source currency and recipient currency are explicit.
-- Dashboard and analytics use authenticated account data only. Before a reporting currency is selected, FlowPay shows real operation counts instead of fabricated monetary totals or repeated placeholder warnings.
-- Customer-facing text avoids database, policy and implementation jargon; internal infrastructure details stay internal.
-- Counterparty bank details with IBAN checksum and BIC validation.
-- Payment draft lifecycle: draft → ready → paid → received.
-- Real CSV import/export helpers and printable/PDF report view.
-- API-key creation with one-time raw secret display and SHA-256 hash storage.
-- Authenticated `POST /api/v1/quote` with API-request logs.
-- Metadata-only audit log for workspace changes.
+## Стек
 
-## Data integrity rules
+- Next.js 15.5.23 / App Router / TypeScript
+- React 19.1.1
+- Supabase Auth + Postgres + RLS
+- Vercel
+- Recharts 3.10.1
+- Tailwind CSS 4
 
-FlowPay 1.2.1 deliberately does **not** fabricate financial data.
+## Переменные окружения
 
-- No sample customers, payments, providers, commissions or dashboard totals are inserted.
-- No fallback payment route is generated when `provider_rules` has no match.
-- No synthetic FX rate is generated when ECB has no reference conversion.
-- `recipient_amount` is stored only when a real route quote supplied a reference conversion.
-- Charts and KPIs omit unsupported currency conversions instead of estimating them.
-
-A provider rule used for a cross-currency route should list **both** the source and recipient ISO 4217 currencies in its `currencies` array. Example: an EUR → TRY corridor should contain both `EUR` and `TRY`.
-
-
-## Upgrading an existing local folder
-
-FlowPay 1.0 changed the route/component structure substantially. If you extract this archive **over** a pre-v1 project directory, old files can remain on disk because ZIP extraction does not delete files that no longer exist. Those leftovers can create duplicate routes or TypeScript errors.
-
-This patch handles both legacy source files **and stale Next.js generated route types** automatically:
-
-```bash
-npm run typecheck
-# 1) removes known pre-v1 source leftovers
-# 2) removes .next + tsconfig.tsbuildinfo
-# 3) runs next typegen against the current App Router tree
-# 4) runs tsc --noEmit
-
-npm run build
-# also starts from a clean .next directory
-```
-
-This specifically prevents old `.next/types/validator.ts` files from importing routes that moved into `app/(workspace)`. For the cleanest upgrade, extracting the archive into a new empty directory is still recommended. FlowPay 1.1.0 introduced a security migration that moves public route-pricing access behind server-side endpoints. Run the required migrations through `supabase/upgrade-v12.sql` when upgrading. FlowPay 1.2 adds launch-readiness tables and RPCs but does not insert provider pricing.
-
-## Environment variables
-
-Copy `.env.example` to `.env.local`:
+Скопируй `.env.example` в `.env.local`:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
-SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_YOUR_PUBLIC_KEY
+
+SUPABASE_SECRET_KEY=sb_secret_YOUR_SERVER_KEY
+# Только для старого проекта как fallback:
+# SUPABASE_SERVICE_ROLE_KEY=YOUR_LEGACY_SERVICE_ROLE_KEY
+
+FLOWPAY_ADMIN_USER_IDS=00000000-0000-0000-0000-000000000000
 FLOWPAY_ADMIN_EMAILS=owner@your-domain.com
 NEXT_PUBLIC_APP_URL=https://your-domain.com
+CRON_SECRET=replace-with-a-long-random-secret
 ```
 
-`SUPABASE_SERVICE_ROLE_KEY` is server-only. Never expose it through `NEXT_PUBLIC_*`. The normal authenticated dashboard uses the publishable key plus RLS. The service-role key is required by `/api/v1/quote` to verify hashed FlowPay API keys and write API usage logs.
+Для `/admin` предпочтительно использовать `FLOWPAY_ADMIN_USER_IDS`: UUID не меняется при смене email. Если список ID непустой, fallback по email полностью отключается. `SUPABASE_SECRET_KEY`, legacy service-role key и `CRON_SECRET` — только серверные секреты. Никогда не добавляй им префикс `NEXT_PUBLIC_` и не коммить реальные значения в Git.
 
-## Supabase setup
+## Настройка базы
 
-### Fresh project
+### Новый проект
 
-Run the complete file in Supabase SQL Editor:
+Выполни целиком:
 
 ```text
 supabase/schema.sql
 ```
 
-### Existing FlowPay v0.5.x database
+### Если база уже на FlowPay 1.2.x
 
-Run the upgrades in order:
+Выполни один раз:
+
+```text
+supabase/upgrade-v13.sql
+```
+
+### Если база на 1.1.x
+
+```text
+supabase/upgrade-v12.sql
+supabase/upgrade-v13.sql
+```
+
+### Если база на 1.0.x
+
+```text
+supabase/upgrade-v11.sql
+supabase/upgrade-v12.sql
+supabase/upgrade-v13.sql
+```
+
+### Если база ещё v0.5.x
 
 ```text
 supabase/upgrade-v10.sql
 supabase/upgrade-v11.sql
 supabase/upgrade-v12.sql
+supabase/upgrade-v13.sql
 ```
 
-`upgrade-v10.sql` adds the v1 product tables/columns. `upgrade-v11.sql` moves anonymous route-pricing access behind FlowPay server endpoints. Neither migration creates provider pricing.
+Миграции не добавляют выдуманные тарифы платёжных провайдеров. Реальные правила добавляются оператором через `/admin`.
 
-### Existing FlowPay 1.0.x database
-
-Run in order:
-
-```text
-supabase/upgrade-v11.sql
-supabase/upgrade-v12.sql
-```
-
-### Existing FlowPay 1.1.x database
-
-Run once:
-
-```text
-supabase/upgrade-v12.sql
-```
-
-After the migration, sign in with an operator account configured in `FLOWPAY_ADMIN_EMAILS` and use `/admin` to configure verified payment routes.
-
-## Local run
+## Локальный запуск
 
 ```bash
 npm install
 npm run dev
 ```
 
-Then open `http://localhost:3000`.
+Открой `http://localhost:3000`.
 
-## Verification commands
+## Обязательная проверка перед deploy
 
 ```bash
 npm run check:env
 npm run audit
 npm run typecheck
 npm run build
+npm run audit:deps
 ```
 
-`npm run audit` runs static UI/product invariants plus runtime checks for routing, dual-currency recipient projection, IBAN/BIC validation and CSV parsing.
+Дополнительно на локальном/Preview окружении:
 
-## Public route quote
+```bash
+npm run load:smoke
+```
 
-The public calculator uses:
+Параметры smoke-нагрузки:
+
+```bash
+FLOWPAY_LOAD_BASE_URL=https://your-preview.example.com \
+FLOWPAY_LOAD_CONCURRENCY=20 \
+FLOWPAY_LOAD_REQUESTS=500 \
+npm run load:smoke
+```
+
+Не запускай агрессивный load test против production без контроля лимитов Vercel, базы и внешних провайдеров.
+
+## Публичный quote API
 
 ```http
 POST /api/quote
@@ -166,11 +146,11 @@ Content-Type: application/json
 }
 ```
 
-The response can contain zero routes. That means there is no active matching provider rule; FlowPay does not invent one.
+FlowPay возвращает только маршруты, для которых в базе есть активные реальные правила. Если подходящих правил нет, маршрут не выдумывается.
 
-## Authenticated API
+## API для клиентов
 
-Create an API key in **Developer → API keys**, then call:
+Создай ключ в разделе **API**, затем:
 
 ```bash
 curl -X POST https://YOUR_DOMAIN/api/v1/quote \
@@ -185,26 +165,28 @@ curl -X POST https://YOUR_DOMAIN/api/v1/quote \
   }'
 ```
 
-The raw `fp_live_...` secret is shown once. Only its SHA-256 hash is persisted.
+Полный `fp_live_...` показывается только при создании. В БД хранится только его hash.
 
-## Vercel deployment
+## Production
 
-1. Push/import the repository into Vercel.
-2. Add all required environment variables from `.env.example` to the desired Vercel environments.
-3. Run the fresh schema, or the required upgrade files for your current FlowPay version.
-4. Configure real provider rules.
-5. Deploy.
+1. Добавь environment variables в Vercel.
+2. Прогони нужную SQL-миграцию.
+3. Настрой `CRON_SECRET` — `vercel.json` содержит ежедневный maintenance cron.
+4. Добавь реальные платёжные направления в `/admin`.
+5. Сначала задеплой Preview и пройди `LAUNCH_CHECKLIST.md`.
+6. После smoke/E2E проверки выкатывай production.
 
-No separate Node server is required; the Next.js route handlers run on Vercel.
+## Дополнительные документы
 
-## Launch handoff
+- `LAUNCH_CHECKLIST.md` — чеклист перед закрытой бетой.
+- `SCALING_RU.md` — что уже оптимизировано и когда понадобится следующий инфраструктурный уровень.
+- `SECURITY.md` — правила безопасности репозитория и релиза.
+- `LEGAL_REVIEW_REQUIRED.md` — что должен проверить юрист до коммерческого запуска.
 
-See `LAUNCH_CHECKLIST.md` for the exact private-beta smoke flow and the remaining external work that requires your domain, legal entity, real provider contracts, production email and compliance review.
+## Важная граница продукта
 
-## Important payment/compliance boundary
+Текущая версия FlowPay — слой сравнения маршрутов и управления платёжными операциями. Она сама не должна принимать на хранение или самостоятельно перемещать клиентские деньги без соответствующей лицензированной платёжной инфраструктуры и юридической проверки.
 
-FlowPay 1.2 is an operations/routing workspace. It does not itself custody, settle, exchange or transmit customer funds. Any future real-money execution, balance or instant-payout feature should be connected through appropriately licensed payment infrastructure and reviewed for the jurisdictions in which it operates.
+## Примечание к архиву
 
-## Build note for this delivered archive
-
-The source-level UI/project audits and local runtime invariants were executed in the build environment. The environment could not reach the npm registry, so a dependency install and full `next build` could not be completed there. Run `npm install && npm run typecheck && npm run build` in your normal connected environment before production deployment.
+В среде сборки ChatGPT npm registry может быть недоступен. Поэтому статические/runtime/security/performance проверки выполняются здесь, а финальные `npm install`, `npm run typecheck` и `npm run build` обязательно нужно прогнать в твоём подключённом окружении или CI перед production.

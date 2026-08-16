@@ -12,7 +12,7 @@ import { healthScore, isSettled, money, monthLabel, normalize, relativeDate, spe
 import { Card } from '@/components/ui/card'
 import { CountryFlag } from '@/components/brand/CountryFlag'
 import { EmptyState, MetricCard, PageHeader, SectionTitle, StatusBadge } from '@/components/workspace/primitives'
-import { VolumeAreaChart } from '@/components/workspace/Charts'
+import { VolumeAreaChart } from '@/components/workspace/LazyCharts'
 import { buttonVariants } from '@/components/ui/button'
 import { clamp, cn } from '@/lib/utils'
 import { bankDetailsState } from '@/lib/payment-validation'

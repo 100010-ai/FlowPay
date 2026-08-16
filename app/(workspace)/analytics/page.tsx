@@ -11,7 +11,7 @@ import { healthScore, isSettled, money, monthLabel, normalize, number, providerL
 import { PageHeader, MetricCard, EmptyState, SectionTitle } from '@/components/workspace/primitives'
 import { Card } from '@/components/ui/card'
 import { SelectMenu } from '@/components/ui/select-menu'
-import { DistributionBars, SavingsDonut, VolumeAreaChart } from '@/components/workspace/Charts'
+import { DistributionBars, SavingsDonut, VolumeAreaChart } from '@/components/workspace/LazyCharts'
 import { CountryFlag } from '@/components/brand/CountryFlag'
 import type { Language, PaymentDraft } from '@/lib/types'
 

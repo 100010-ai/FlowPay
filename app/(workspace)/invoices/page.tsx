@@ -21,7 +21,7 @@ import { userError } from '@/lib/user-error'
 import type { Invoice } from '@/lib/types'
 
 type ImportState={tone:'success'|'error';text:string}|null
-const statuses=new Set(['open','scheduled','paid','cancelled'])
+const importStatuses=new Set(['open','paid','cancelled'])
 function validDate(value:string){return !value||/^\d{4}-\d{2}-\d{2}$/.test(value)}
 
 export default function InvoicesPage(){
@@ -43,11 +43,11 @@ export default function InvoicesPage(){
         if(!supplier)throw new Error(`${lang==='ru'?'Строка':'Row'} ${index+2}: supplier_name`)
         if(!Number.isFinite(amount)||amount<=0)throw new Error(`${lang==='ru'?'Строка':'Row'} ${index+2}: amount`)
         if(!isSupportedCurrency(currency))throw new Error(`${lang==='ru'?'Строка':'Row'} ${index+2}: currency ${currency||'—'}`)
-        if(!statuses.has(rowStatus))throw new Error(`${lang==='ru'?'Строка':'Row'} ${index+2}: status ${rowStatus}`)
+        if(!importStatuses.has(rowStatus))throw new Error(`${lang==='ru'?'Строка':'Row'} ${index+2}: status ${rowStatus}`)
         if(!validDate(r.issue_date||'')||!validDate(r.due_date||''))throw new Error(`${lang==='ru'?'Строка':'Row'} ${index+2}: date must be YYYY-MM-DD`)
-        return {user_id:ws.user!.id,counterparty_id:null,invoice_number:invoiceNumber,supplier_name:supplier,issue_date:r.issue_date||null,due_date:r.due_date||null,amount,currency,status:rowStatus,reference:(r.reference||'').trim(),notes:(r.notes||'').trim(),payment_draft_id:null}
+        return {invoice_number:invoiceNumber,supplier_name:supplier,issue_date:r.issue_date||null,due_date:r.due_date||null,amount,currency,status:rowStatus,reference:(r.reference||'').trim(),notes:(r.notes||'').trim()}
       })
-      const {error}=await createClient().from('invoices').insert(payload);if(error)throw error
+      const {error}=await createClient().rpc('flowpay_import_invoices',{p_rows:payload});if(error)throw error
       await ws.refresh();setImportState({tone:'success',text:lang==='ru'?`Импортировано счетов: ${payload.length}`:`Imported ${payload.length} invoice${payload.length===1?'':'s'}.`})
     }catch(error){const raw=error instanceof Error?error.message:'';const safe=/^(CSV|Row|Строка|За один|В CSV|CSV слишком)/.test(raw);setImportState({tone:'error',text:safe?raw:userError(lang,'save')})}finally{setImporting(false);if(fileRef.current)fileRef.current.value=''}
   }
