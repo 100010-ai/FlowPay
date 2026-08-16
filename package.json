@@ -1,0 +1,45 @@
+{
+  "name": "flowpay",
+  "version": "1.2.1",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "next typegen && tsc --noEmit",
+    "audit:ui": "node scripts/ui-audit.mjs",
+    "audit": "node scripts/ui-audit.mjs && node scripts/commercial-copy-audit.mjs && node scripts/project-audit.mjs && node scripts/backend-audit.mjs && node scripts/runtime-audit.cjs && node scripts/launch-audit.mjs",
+    "audit:runtime": "node scripts/runtime-audit.cjs",
+    "cleanup:legacy": "node scripts/cleanup-legacy.mjs",
+    "pretypecheck": "npm run cleanup:legacy && npm run cleanup:generated",
+    "prebuild": "npm run cleanup:legacy && npm run cleanup:generated",
+    "cleanup:generated": "node scripts/cleanup-generated.mjs",
+    "audit:copy": "node scripts/commercial-copy-audit.mjs",
+    "audit:backend": "node scripts/backend-audit.mjs",
+    "audit:launch": "node scripts/launch-audit.mjs",
+    "check:env": "node scripts/env-check.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.2.6",
+    "@supabase/supabase-js": "^2.57.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "country-flag-icons": "^1.5.19",
+    "lucide-react": "^0.468.0",
+    "next": "^15.5.3",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "recharts": "^2.15.4",
+    "tailwind-merge": "^3.3.1",
+    "zod": "^4.1.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.10",
+    "@types/node": "^22.14.0",
+    "@types/react": "^19.1.10",
+    "@types/react-dom": "^19.1.7",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.10",
+    "typescript": "^5.9.2"
+  }
+}

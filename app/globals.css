@@ -1,0 +1,126 @@
+@import "tailwindcss";
+
+:root {
+  --fp-bg: #fafaf7;
+  --fp-surface: #ffffff;
+  --fp-surface-muted: #f6f7f3;
+  --fp-surface-hover: #f2f5f0;
+  --fp-border: #e7e9e4;
+  --fp-border-strong: #d9ded8;
+  --fp-text: #111915;
+  --fp-muted: #68716b;
+  --fp-subtle: #929a95;
+  --fp-green: #187a45;
+  --fp-green-strong: #0f6538;
+  --fp-green-soft: #eaf4ed;
+  --fp-red: #c73f43;
+  --fp-red-soft: #fbecee;
+  --fp-amber: #a66a11;
+  --fp-amber-soft: #fbf2df;
+  --fp-blue: #2e6fa3;
+  --fp-blue-soft: #eaf2f8;
+  --fp-shadow: 0 1px 2px rgba(15, 30, 20, .03), 0 10px 32px rgba(20, 38, 26, .035);
+  --fp-shadow-lg: 0 18px 60px rgba(23, 43, 30, .10);
+}
+
+* { box-sizing: border-box; }
+html { background: var(--fp-bg); color-scheme: light; scroll-behavior: smooth; }
+body { min-height: 100vh; font-size: 15px; margin: 0; background: var(--fp-bg); color: var(--fp-text); font-family: "Inter Variable", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-feature-settings: "cv02", "cv03", "cv04", "cv11"; -webkit-font-smoothing: antialiased; }
+button, input, select, textarea { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
+a { color: inherit; text-decoration: none; }
+::selection { background: #d7eadc; color: #0f3f26; }
+
+@keyframes fp-fade-up { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fp-pop { from { opacity: 0; transform: scale(.985) translateY(-4px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+@keyframes fp-shimmer { 100% { transform: translateX(100%); } }
+@keyframes fp-route { from { stroke-dashoffset: 130; } to { stroke-dashoffset: 0; } }
+@keyframes fp-dot { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(14px); } }
+@keyframes fp-pulse { 0%, 100% { opacity: .55; transform: scale(.94); } 50% { opacity: 1; transform: scale(1); } }
+
+.fp-enter { animation: fp-fade-up .36s cubic-bezier(.2,.8,.2,1) both; }
+.fp-pop { animation: fp-pop .18s cubic-bezier(.2,.8,.2,1) both; transform-origin: top; }
+.fp-card { border: 1px solid var(--fp-border); background: var(--fp-surface); border-radius: 14px; box-shadow: var(--fp-shadow); }
+.fp-card-flat { border: 1px solid var(--fp-border); background: var(--fp-surface); border-radius: 14px; }
+.fp-scrollbar { scrollbar-width: thin; scrollbar-color: #ccd2cd transparent; }
+.fp-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+.fp-scrollbar::-webkit-scrollbar-thumb { background: #c9d0ca; border-radius: 99px; }
+
+.recharts-cartesian-grid-horizontal line, .recharts-cartesian-grid-vertical line { stroke: #edf0eb; }
+.recharts-text { fill: #6f7972; font-size: 13px; }
+.recharts-tooltip-wrapper { outline: none !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+
+@media print {
+  @page { margin: 14mm; size: A4 landscape; }
+  html, body { background: #fff !important; }
+  .fp-shell-sidebar, .fp-shell-topbar, .fp-shell-mobile-nav, .fp-print-hide { display: none !important; }
+  .fp-shell-main { padding-left: 0 !important; }
+  .fp-card, .fp-card-flat { box-shadow: none !important; break-inside: avoid; }
+  .fp-enter { animation: none !important; }
+}
+
+/* Keyboard focus stays visible without changing the approved light visual language. */
+:where(a, button, input, select, textarea, [role="button"], [role="option"], [role="combobox"]):focus-visible {
+  outline: 2px solid rgba(24, 122, 69, .34);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) {
+  .fp-card, .fp-card-flat { transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+}
+
+/* v1.1 workspace polish */
+.fp-shell-sidebar { box-shadow: 1px 0 0 rgba(15,31,20,.015); }
+.fp-shell-topbar { box-shadow: 0 1px 0 rgba(15,31,20,.018); }
+.fp-card { box-shadow: 0 1px 2px rgba(17,35,22,.025), 0 12px 36px rgba(24,48,31,.035); }
+.fp-card:hover { border-color: #dde2dc; }
+.fp-enter > * { min-width: 0; }
+.fp-enter table { font-variant-numeric: tabular-nums; }
+.fp-enter input, .fp-enter textarea { font-size: 15px; }
+.fp-commercial-label { font-size: 13px; line-height: 1.4; color: var(--fp-muted); font-weight: 500; }
+.fp-kpi-grid { display:grid; gap:12px; grid-template-columns:repeat(4,minmax(0,1fr)); }
+.fp-soft-panel { border:1px solid #e5e9e4; background:linear-gradient(180deg,#fbfcfa 0%,#f7f9f6 100%); border-radius:14px; }
+.fp-attention-row { display:flex; align-items:center; gap:12px; border-radius:12px; padding:11px 12px; transition:background .16s ease; }
+.fp-attention-row:hover { background:#f6f8f5; }
+.fp-mini-dot { width:8px;height:8px;border-radius:999px;box-shadow:0 0 0 4px rgba(24,122,69,.08);background:var(--fp-green); }
+
+@media (max-width: 1279px) { .fp-kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width: 639px) { .fp-kpi-grid { grid-template-columns:1fr; } }
+
+@media (max-width: 639px) { .fp-enter input, .fp-enter textarea { font-size: 16px; } }
+
+/* FlowPay 1.1 — commercial workspace refinement */
+:root {
+  --fp-bg: #f7f8f5;
+  --fp-surface: #ffffff;
+  --fp-surface-muted: #f3f5f1;
+  --fp-surface-hover: #eef3ee;
+  --fp-border: #dfe4de;
+  --fp-border-strong: #cfd7d0;
+  --fp-muted: #626d66;
+  --fp-subtle: #8a948e;
+  --fp-shadow: 0 1px 2px rgba(15, 30, 20, .035), 0 10px 28px rgba(20, 38, 26, .045);
+  --fp-shadow-lg: 0 22px 70px rgba(19, 39, 25, .13);
+}
+.fp-card, .fp-card-flat { border-radius: 16px; }
+.fp-card { box-shadow: var(--fp-shadow); }
+.fp-card:hover { border-color: #d4dbd4; box-shadow: 0 1px 2px rgba(15,30,20,.035), 0 14px 36px rgba(20,38,26,.055); }
+.fp-shell-sidebar { background: rgba(255,255,255,.98); }
+.fp-shell-topbar { background: rgba(255,255,255,.92); }
+.fp-enter { width: 100%; }
+.fp-enter h1, .fp-enter h2, .fp-enter strong { text-rendering: geometricPrecision; }
+.fp-enter table thead { position: sticky; top: 0; z-index: 2; }
+.fp-enter table tbody tr { min-height: 52px; }
+.fp-enter table tbody tr:hover { background: #f6f8f5; }
+.fp-kpi-grid { gap: 14px; }
+.fp-soft-panel { border-color: var(--fp-border); background: linear-gradient(180deg,#fbfcfa 0%,#f5f7f4 100%); border-radius: 16px; }
+.fp-attention-row { padding: 12px 13px; }
+
+@media (min-width: 1024px) {
+  .fp-shell-main > main { max-width: 1580px; }
+}

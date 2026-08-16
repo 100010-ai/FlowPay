@@ -1,0 +1,2 @@
+import { cn } from '@/lib/utils'
+export function FlowPayLogo({compact=false,className}:{compact?:boolean;className?:string}){return <span className={cn('inline-flex items-center gap-2.5 text-[18px] font-bold tracking-[-.04em] text-[#101915]',className)}><svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="4" width="22" height="7" rx="3.2" fill="#187A45"/><rect x="4" y="13" width="8" height="15" rx="3.2" fill="#187A45"/><rect x="14" y="13" width="12" height="7" rx="3.2" fill="#6FAD87"/></svg>{!compact&&<span>FlowPay</span>}</span>}

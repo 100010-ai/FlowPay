@@ -1,0 +1,5 @@
+import * as React from 'react'
+import { cn } from '@/lib/utils'
+export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(({ className, ...props }, ref) => <input ref={ref} className={cn('h-12 w-full rounded-[12px] border border-[var(--fp-border)] bg-white px-3.5 text-[15px] text-[var(--fp-text)] outline-none transition placeholder:text-[var(--fp-subtle)] hover:border-[var(--fp-border-strong)] focus:border-[#9fb4a5] focus:ring-4 focus:ring-[#eaf4ed] disabled:bg-[#f5f6f3] disabled:text-[var(--fp-subtle)]',className)} {...props}/>)
+Input.displayName='Input'
+export function Textarea({className,...props}:React.TextareaHTMLAttributes<HTMLTextAreaElement>){return <textarea className={cn('min-h-24 w-full resize-y rounded-[12px] border border-[var(--fp-border)] bg-white px-3.5 py-3 text-[15px] leading-5 outline-none transition placeholder:text-[var(--fp-subtle)] hover:border-[var(--fp-border-strong)] focus:border-[#9fb4a5] focus:ring-4 focus:ring-[#eaf4ed]',className)} {...props}/>} 
