@@ -77,7 +77,7 @@ requireAll('app/reset-password/page.tsx',["signOut({ scope: 'global' })",'minLen
 requireAll('lib/security.ts',['@[A-Z0-9.-]+','[A-Z]{2}\\d{2}[A-Z0-9]{10,30}'])
 requireAll('public/.well-known/security.txt',['Contact: https://flowpay-network.vercel.app/security','Canonical: https://flowpay-network.vercel.app/.well-known/security.txt','Preferred-Languages: en, ru'])
 
-requireAll('app/api/admin/overview/route.ts',['requireAal2','isFlowPayAdmin'])
+requireAll('app/api/admin/overview/route.ts',['requireFlowPayAdmin']); requireAll('lib/admin-api.ts',['requireAal2','isFlowPayAdmin','checkRateLimit'])
 requireAll('app/api/quote/route.ts',["auth?.assuranceLevel === 'aal2'",'createAdminClient'])
 requireAll('app/api/audit/route.ts',["auth?.assuranceLevel === 'aal2' ? auth.user.id : null"])
 requireAll('app/api/keys/route.ts',["scope: 'quote:read'",'ttlDays','expires_at',"if ((count || 0) >= 10)"])
@@ -94,7 +94,7 @@ for(const legacy of ['PaymentDialog.tsx','CounterpartyDialog.tsx','InvoiceDialog
 }
 
 const pkg=JSON.parse(read('package.json'))
-if(!/^1\.6\.\d+$/.test(pkg.version)) failures.push(`expected FlowPay 1.6.x, found ${pkg.version}`)
+if(!/^1\.(?:6|7)\.\d+$/.test(pkg.version)) failures.push(`expected FlowPay 1.6+ security line, found ${pkg.version}`)
 if(!String(pkg.scripts?.audit||'').includes('v16-security-audit.mjs')) failures.push('main audit does not include v1.6 security audit')
 if(pkg.scripts?.['security:prod']!=='node scripts/production-security-check.mjs') failures.push('production security smoke command is missing')
 requireAll('scripts/production-security-check.mjs',["script-src permits unsafe-inline","cross-origin /api/register","unauthenticated /api/keys","API quote without key"])

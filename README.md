@@ -1,8 +1,18 @@
-# FlowPay 1.6
+# FlowPay 1.7
 
-FlowPay — B2B-сервис для сравнения маршрутов международных платежей, управления контрагентами, счетами, платежами, отчётами и API-доступом. Версия 1.6 — security hardening release: mandatory MFA/AAL2, database-enforced least privilege, short-lived API credentials, strict browser policy и hardened registration/CI.
+FlowPay — B2B-сервис для сравнения маршрутов международных платежей, управления контрагентами, счетами, платежами, отчётами и API-доступом. Версия 1.7 — launch/admin release поверх security baseline 1.6: единая operator console, launch readiness, пользователи, операции, API/security telemetry и production routing.
 
-## Что нового в 1.6
+## Что нового в 1.7
+
+- `/admin` переработан в единый operator console: Overview / Users / Operations / API / Security / Routes.
+- Admin link появляется в workspace только после AAL2-проверки и подтверждения immutable user-ID allowlist на сервере.
+- Панель показывает реальные Supabase Auth users, компании, платежи, счета, контрагентов, API keys/usage/logs, system events, audit trail, legal receipts и provider coverage.
+- Launch Center отделяет автоматически проверяемые production gates от ручных SMTP/legal gates.
+- Добавлены поиск и CSV-экспорт уже загруженных admin-данных.
+- Разные валюты намеренно не складываются в фиктивный общий оборот.
+- Новых внешних API и новой DB migration для v1.7 не требуется.
+
+## Security baseline 1.6
 
 - Workspace financial data доступен только после TOTP step-up до AAL2.
 - Второй фактор проверяется не только UI: `upgrade-v16.sql` добавляет restrictive AAL2 policies, FORCE RLS и AAL2 проверки внутри mutation RPC.
@@ -31,7 +41,7 @@ FlowPay — B2B-сервис для сравнения маршрутов меж
 - Security Center показывает способ входа, состояние MFA, срок текущей сессии и последние изменения API-доступа/профиля из audit log.
 - Добавлен `npm run audit:v14`, который защищает новые продуктовые функции от регрессий.
 
-FlowPay 1.6 требует `supabase/upgrade-v16.sql` на существующей v1.5 базе; на более старой базе сначала применяются предыдущие migrations в порядке ниже.
+FlowPay 1.7 сохраняет security baseline v1.6 и требует `supabase/upgrade-v16.sql` на существующей v1.5 базе; на более старой базе сначала применяются предыдущие migrations в порядке ниже.
 
 ## Что изменилось в 1.3
 

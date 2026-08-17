@@ -1,4 +1,4 @@
-# FlowPay 1.6 — чеклист перед запуском
+# FlowPay 1.7 — чеклист перед запуском
 
 Кодовая часть, которую можно закрыть без твоего юрлица, домена и договоров с платёжными партнёрами, подготовлена. Перед закрытой бетой пройди пункты ниже.
 
@@ -77,3 +77,14 @@
 - [ ] Production HTML CSP содержит request nonce и не содержит `unsafe-inline` в `script-src`.
 - [ ] Vercel/Supabase/GitHub manual hardening из `SECURITY_HARDENING.md` пройден.
 - [ ] CI + CodeQL required перед merge в `main`.
+
+
+## FlowPay 1.7 admin / launch checks
+
+- [ ] Операторский аккаунт с AAL2 видит ссылку `Админ-панель` в левой навигации; обычный пользователь её не получает.
+- [ ] `/admin` показывает реальные Users / Payments / Invoices / API / Security / Routes без demo-данных.
+- [ ] Launch Center показывает зелёные Application & database / Routing / Runtime gates.
+- [ ] SMTP signup confirmation и reset password вручную проверены перед внешним трафиком.
+- [ ] Юридические реквизиты оператора вручную проверены в Privacy/Terms перед коммерческим запуском.
+- [ ] CSV-экспорт Users и Operations скачивает только данные, уже загруженные в admin console.
+- [ ] Route editor сохраняет и удаляет правила только после AAL2 admin gate; удаление требует подтверждения.

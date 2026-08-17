@@ -1,5 +1,16 @@
 # FlowPay changelog
 
+## 1.7.0
+
+- Rebuilt `/admin` into a launch and operations console with Overview, Users, Operations, API, Security and Routes sections.
+- Added an AAL2 + immutable-admin allowlist access probe so the Admin console appears in workspace navigation only for authorized operators.
+- Expanded admin telemetry to real Supabase Auth users, company onboarding, payments, invoices, counterparties, API keys, API usage/logs, workspace audit trail, system events, legal acceptance receipts and provider coverage.
+- Added Launch Center gates for application/database availability, routing coverage, recent system errors plus explicit manual SMTP/legal checks.
+- Added client-side search and CSV export for admin user/operation views without introducing a new data-export backend.
+- Kept operational totals currency-safe: the console never sums unrelated currencies into a fake global payment volume.
+- Added `audit:v17` and expanded the full audit suite to 20 API routes.
+- No new external provider API or database migration is required for v1.7.
+
 ## 1.6.1
 
 - Fixed Vercel `EBADENGINE`: `package.json` now declares the Vercel-supported Node major line `24.x` instead of an unavailable exact patch floor.
@@ -123,6 +134,17 @@
 - Preserved real SVG country flags and real-data/empty-state behavior.
 
 # FlowPay changelog
+
+## 1.7.0
+
+- Rebuilt `/admin` into a launch and operations console with Overview, Users, Operations, API, Security and Routes sections.
+- Added an AAL2 + immutable-admin allowlist access probe so the Admin console appears in workspace navigation only for authorized operators.
+- Expanded admin telemetry to real Supabase Auth users, company onboarding, payments, invoices, counterparties, API keys, API usage/logs, workspace audit trail, system events, legal acceptance receipts and provider coverage.
+- Added Launch Center gates for application/database availability, routing coverage, recent system errors plus explicit manual SMTP/legal checks.
+- Added client-side search and CSV export for admin user/operation views without introducing a new data-export backend.
+- Kept operational totals currency-safe: the console never sums unrelated currencies into a fake global payment volume.
+- Added `audit:v17` and expanded the full audit suite to 20 API routes.
+- No new external provider API or database migration is required for v1.7.
 
 ## 1.0.2
 

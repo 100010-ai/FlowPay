@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Activity, BarChart3, Bell, BookOpenText, Building2, ChevronDown, CircleHelp, Code2, FileText, Globe2, LayoutDashboard, Menu, Plus, ReceiptText, RefreshCw, Route, Search, Settings, Users, WalletCards, X } from 'lucide-react'
+import { Activity, BarChart3, Bell, BookOpenText, Building2, ChevronDown, CircleHelp, Code2, FileText, Globe2, LayoutDashboard, Menu, Plus, ReceiptText, RefreshCw, Route, Search, Settings, ShieldCheck, Users, WalletCards, X } from 'lucide-react'
 import { FlowPayLogo } from '@/components/brand/FlowPayLogo'
 import { Button } from '@/components/ui/button'
 import { SelectMenu } from '@/components/ui/select-menu'
@@ -25,11 +25,25 @@ const languageOptions=[{value:'ru',label:'Русский'},{value:'en',label:'En
 
 export function WorkspaceShell({children}:{children:React.ReactNode}){
   const pathname=usePathname();const router=useRouter();const {lang,setLang}=useLanguage();const t=workspaceDictionaries[lang];const copy=workspaceCopy[lang];const ws=useWorkspace()
-  const [searchOpen,setSearchOpen]=useState(false);const [query,setQuery]=useState('');const [activityOpen,setActivityOpen]=useState(false);const [profileOpen,setProfileOpen]=useState(false);const [mobileOpen,setMobileOpen]=useState(false);const activityRef=useRef<HTMLDivElement>(null);const profileRef=useRef<HTMLDivElement>(null)
+  const [searchOpen,setSearchOpen]=useState(false);const [query,setQuery]=useState('');const [activityOpen,setActivityOpen]=useState(false);const [profileOpen,setProfileOpen]=useState(false);const [mobileOpen,setMobileOpen]=useState(false);const [adminAccess,setAdminAccess]=useState(false);const activityRef=useRef<HTMLDivElement>(null);const profileRef=useRef<HTMLDivElement>(null)
   useEffect(()=>{const fn=(e:KeyboardEvent)=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();setSearchOpen(true)}if(e.key==='Escape'){setSearchOpen(false);setActivityOpen(false);setProfileOpen(false);setMobileOpen(false)}};window.addEventListener('keydown',fn);return()=>window.removeEventListener('keydown',fn)},[])
   useEffect(()=>{const fn=(e:MouseEvent)=>{if(activityRef.current&&!activityRef.current.contains(e.target as Node))setActivityOpen(false);if(profileRef.current&&!profileRef.current.contains(e.target as Node))setProfileOpen(false)};document.addEventListener('mousedown',fn);return()=>document.removeEventListener('mousedown',fn)},[])
   const needsSetup=!ws.loading&&Boolean(ws.user)&&(!ws.profile?.name?.trim()||!ws.profile?.country||!ws.profile?.preferred_currency)
   useEffect(()=>{if(needsSetup)router.replace('/onboarding')},[needsSetup,router])
+  useEffect(()=>{
+    let cancelled=false
+    if(!ws.user||ws.mfaCurrentLevel!=='aal2'){setAdminAccess(false);return}
+    void (async()=>{
+      try{
+        const {data}=await createClient().auth.getSession()
+        const accessToken=data.session?.access_token
+        if(!accessToken)return
+        const response=await fetch('/api/admin/access',{headers:{Authorization:`Bearer ${accessToken}`},cache:'no-store'})
+        if(!cancelled)setAdminAccess(response.ok)
+      }catch{if(!cancelled)setAdminAccess(false)}
+    })()
+    return()=>{cancelled=true}
+  },[ws.user?.id,ws.mfaCurrentLevel])
 
   const activities=useMemo(()=>{
     const rows:{id:string;title:string;subtitle:string;date:string;tone:'success'|'info'|'warning'|'neutral'}[]=[]
@@ -61,11 +75,11 @@ export function WorkspaceShell({children}:{children:React.ReactNode}){
   },[ws.payments,ws.calculations,ws.auditLogs,ws.profile,lang])
 
   const searchItems=useMemo(()=>{
-    const q=query.trim().toLowerCase();const nav=[...primary,...more].map(([key,path])=>({type:'page',id:path,label:t.nav[key as keyof typeof t.nav],meta:path,path}))
+    const q=query.trim().toLowerCase();const nav:{type:string;id:string;label:string;meta:string;path:string}[]=[...primary,...more].map(([key,path])=>({type:'page',id:path,label:t.nav[key as keyof typeof t.nav],meta:path,path}));if(adminAccess)nav.push({type:'page',id:'/admin',label:lang==='ru'?'Админ-панель':'Admin console',meta:'/admin',path:'/admin'})
     const cps=ws.counterparties.map(c=>({type:'counterparty',id:c.id,label:c.name,meta:`${c.country} · ${c.currency}`,path:`/counterparties?selected=${c.id}`}))
     const pays=ws.payments.map(p=>({type:'payment',id:p.id,label:p.invoice_number||p.supplier_name,meta:`${p.supplier_name} · ${p.currency} ${Number(p.amount).toLocaleString()}`,path:`/payments?selected=${p.id}`}))
     return [...nav,...cps,...pays].filter(item=>!q||`${item.label} ${item.meta}`.toLowerCase().includes(q)).slice(0,14)
-  },[query,t,ws.counterparties,ws.payments])
+  },[query,t,ws.counterparties,ws.payments,adminAccess,lang])
 
   async function signOut(){await createClient().auth.signOut();router.replace('/login');router.refresh()}
   if(ws.loading)return <WorkspaceLoading/>
@@ -77,7 +91,7 @@ export function WorkspaceShell({children}:{children:React.ReactNode}){
     <aside className="fp-shell-sidebar fixed inset-y-0 left-0 z-40 hidden w-[248px] border-r border-[var(--fp-border)] bg-white lg:flex lg:flex-col">
       <div className="flex h-[76px] items-center px-5"><Link href="/dashboard"><FlowPayLogo/></Link></div>
       <nav className="flex-1 px-3 pt-3"><div>{primary.map(([key,path])=>{const Icon=iconMap[key];const active=pathname===path||pathname.startsWith(`${path}/`);return <Link key={key} href={path} className={cn('mb-1 flex h-11 items-center gap-3 rounded-[12px] px-3.5 text-[15px] font-medium text-[#3f4842] transition hover:bg-[#f5f6f3] hover:text-[var(--fp-text)]',active&&'bg-[#eaf2eb] text-[var(--fp-green-strong)] shadow-[inset_0_0_0_1px_rgba(24,122,69,.035)]')}><Icon size={18} strokeWidth={1.8}/><span>{t.nav[key]}</span></Link>})}</div><div className="mx-3 my-4 border-t border-[var(--fp-border)]"/><div className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[.12em] text-[var(--fp-subtle)]">{lang==='ru'?'Дополнительно':lang==='fr'?'Plus':lang==='de'?'Weitere':lang==='es'?'Más':'More'}</div>{more.map(([key,path])=>{const Icon=iconMap[key];const active=pathname===path||pathname.startsWith(`${path}/`);return <Link key={key} href={path} className={cn('mb-1 flex h-10 items-center gap-3 rounded-[11px] px-3.5 text-[14px] font-medium text-[#59635d] transition hover:bg-[#f5f6f3] hover:text-[var(--fp-text)]',active&&'bg-[#f0f5f0] text-[var(--fp-green-strong)]')}><Icon size={17} strokeWidth={1.8}/><span>{t.nav[key as keyof typeof t.nav]}</span></Link>})}</nav>
-      <div className="p-4"><Link href="/settings" className="block rounded-[14px] border border-[var(--fp-border)] bg-[linear-gradient(180deg,#fbfcfa,#f6f9f6)] p-4 transition hover:border-[#cedbd0] hover:bg-white"><span className="flex items-center gap-2 text-[14px] font-semibold"><CircleHelp size={17} className="text-[var(--fp-green)]"/>{t.shell.help}</span><p className="mt-2 text-[14px] leading-5 text-[var(--fp-muted)]">{t.shell.helpText}</p></Link></div>
+      <div className="p-4">{adminAccess&&<Link href="/admin" className={cn('mb-3 flex h-10 items-center gap-3 rounded-[11px] border px-3 text-[13px] font-semibold transition',pathname.startsWith('/admin')?'border-[#c7ddcd] bg-[var(--fp-green-soft)] text-[var(--fp-green-strong)]':'border-[var(--fp-border)] bg-white text-[#47534c] hover:bg-[#f5f7f4]')}><ShieldCheck size={16}/>{lang==='ru'?'Админ-панель':'Admin console'}</Link>}<Link href="/settings" className="block rounded-[14px] border border-[var(--fp-border)] bg-[linear-gradient(180deg,#fbfcfa,#f6f9f6)] p-4 transition hover:border-[#cedbd0] hover:bg-white"><span className="flex items-center gap-2 text-[14px] font-semibold"><CircleHelp size={17} className="text-[var(--fp-green)]"/>{t.shell.help}</span><p className="mt-2 text-[14px] leading-5 text-[var(--fp-muted)]">{t.shell.helpText}</p></Link></div>
     </aside>
 
     <div className="fp-shell-main lg:pl-[248px]">
@@ -101,7 +115,7 @@ export function WorkspaceShell({children}:{children:React.ReactNode}){
       <button onClick={()=>setMobileOpen(true)} className="flex flex-col items-center justify-center gap-1 text-[14px] font-medium text-[var(--fp-muted)]"><Menu size={18}/>{copy.common.more}</button>
     </nav>
 
-    {mobileOpen&&<div className="fixed inset-0 z-[90] bg-[rgba(12,18,14,.10)] lg:hidden" onMouseDown={e=>{if(e.target===e.currentTarget)setMobileOpen(false)}}><aside className="fp-pop absolute inset-y-0 left-0 w-[290px] border-r border-[var(--fp-border)] bg-white p-4 shadow-[var(--fp-shadow-lg)]"><div className="flex h-12 items-center justify-between px-2"><FlowPayLogo/><button onClick={()=>setMobileOpen(false)} className="grid size-8 place-items-center rounded-lg hover:bg-[var(--fp-surface-muted)]"><X size={18}/></button></div><nav className="mt-5">{[...primary,...more].map(([key,path])=>{const Icon=iconMap[key];const active=pathname===path;return <Link onClick={()=>setMobileOpen(false)} key={key} href={path} className={cn('mb-1 flex h-10 items-center gap-3 rounded-[10px] px-3 text-[14px] text-[var(--fp-muted)] hover:bg-[var(--fp-surface-muted)]',active&&'bg-[var(--fp-green-soft)] text-[var(--fp-green-strong)]')}><Icon size={17}/>{t.nav[key as keyof typeof t.nav]}</Link>})}</nav><div className="mt-5 border-t border-[var(--fp-border)] pt-4"><SelectMenu value={lang} onChange={v=>setLang(v as Language)} options={languageOptions.map(o=>({...o,leading:<Globe2 size={14}/>}))} ariaLabel={t.settings.language}/></div></aside></div>}
+    {mobileOpen&&<div className="fixed inset-0 z-[90] bg-[rgba(12,18,14,.10)] lg:hidden" onMouseDown={e=>{if(e.target===e.currentTarget)setMobileOpen(false)}}><aside className="fp-pop absolute inset-y-0 left-0 w-[290px] border-r border-[var(--fp-border)] bg-white p-4 shadow-[var(--fp-shadow-lg)]"><div className="flex h-12 items-center justify-between px-2"><FlowPayLogo/><button onClick={()=>setMobileOpen(false)} className="grid size-8 place-items-center rounded-lg hover:bg-[var(--fp-surface-muted)]"><X size={18}/></button></div><nav className="mt-5">{[...primary,...more].map(([key,path])=>{const Icon=iconMap[key];const active=pathname===path;return <Link onClick={()=>setMobileOpen(false)} key={key} href={path} className={cn('mb-1 flex h-10 items-center gap-3 rounded-[10px] px-3 text-[14px] text-[var(--fp-muted)] hover:bg-[var(--fp-surface-muted)]',active&&'bg-[var(--fp-green-soft)] text-[var(--fp-green-strong)]')}><Icon size={17}/>{t.nav[key as keyof typeof t.nav]}</Link>})}{adminAccess&&<Link onClick={()=>setMobileOpen(false)} href="/admin" className={cn('mb-1 flex h-10 items-center gap-3 rounded-[10px] px-3 text-[14px] text-[var(--fp-muted)] hover:bg-[var(--fp-surface-muted)]',pathname.startsWith('/admin')&&'bg-[var(--fp-green-soft)] text-[var(--fp-green-strong)]')}><ShieldCheck size={17}/>{lang==='ru'?'Админ-панель':'Admin console'}</Link>}</nav><div className="mt-5 border-t border-[var(--fp-border)] pt-4"><SelectMenu value={lang} onChange={v=>setLang(v as Language)} options={languageOptions.map(o=>({...o,leading:<Globe2 size={14}/>}))} ariaLabel={t.settings.language}/></div></aside></div>}
 
     {searchOpen&&<div className="fixed inset-0 z-[100] flex items-start justify-center bg-[rgba(12,18,14,.10)] px-4 pt-[12vh]" onMouseDown={e=>{if(e.target===e.currentTarget)setSearchOpen(false)}}><section className="fp-pop w-full max-w-[620px] overflow-hidden rounded-[16px] border border-[var(--fp-border)] bg-white shadow-[var(--fp-shadow-lg)]"><label className="flex h-14 items-center gap-3 border-b border-[var(--fp-border)] px-4"><Search size={18} className="text-[var(--fp-muted)]"/><input autoFocus value={query} onChange={e=>setQuery(e.target.value)} placeholder={t.shell.command} className="h-full flex-1 bg-transparent text-[14px] outline-none placeholder:text-[var(--fp-subtle)]"/><kbd className="rounded-md border border-[var(--fp-border)] bg-[#f7f8f5] px-2 py-1 text-[14px] text-[var(--fp-muted)]">ESC</kbd></label><div className="fp-scrollbar max-h-[440px] overflow-y-auto p-2">{searchItems.map(item=><button key={`${item.type}-${item.id}`} onClick={()=>{router.push(item.path);setSearchOpen(false);setQuery('')}} className="flex w-full items-center gap-3 rounded-[10px] px-3 py-2.5 text-left hover:bg-[var(--fp-surface-muted)]"><span className="grid size-8 place-items-center rounded-lg bg-[#f1f4ef] text-[var(--fp-green)]">{item.type==='counterparty'?<Users size={15}/>:item.type==='payment'?<FileText size={15}/>:<LayoutDashboard size={15}/>}</span><span className="min-w-0"><strong className="block truncate text-[14px] font-medium">{item.label}</strong><small className="block truncate text-[14px] text-[var(--fp-muted)]">{item.meta}</small></span></button>)}</div></section></div>}
   </div>
