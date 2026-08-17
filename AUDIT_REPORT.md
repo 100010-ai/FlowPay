@@ -1,68 +1,57 @@
-# FlowPay 1.3.4 — final audit report
+# FlowPay 1.4.0 — product upgrade audit report
 
-Дата финального прохода: 2026-08-16.
+Дата прохода: 2026-08-17.
 
 ## Privacy boundary
 
-Файлы окружения не открывались, не читались, не анализировались и не изменялись. Рабочая копия для аудита была создана без `.env` / `.env.*`, а итоговый архив также их не содержит. Проверка `check:env` намеренно не запускалась.
+Файлы окружения не открывались, не читались, не анализировались и не изменялись. Рабочая копия создана из env-free release-архива. `npm run check:env` намеренно не запускался.
 
-## Что очищено
+## Что изменено в 1.4
 
-- `node_modules`, `.next`, `.git`, `tsconfig.tsbuildinfo` и прочие generated/local artifacts исключены из дистрибутива.
-- Удалены одноразовые `APPLY_*`/hotfix-скрипты и временные README, использовавшиеся только во время ремонта предыдущих сборок.
-- Удалён неиспользуемый helper URL с резервными ветками.
-- Windows launcher и CI переведены на `npm ci` для воспроизводимой установки по lock-файлу.
-- Публичный API-пример использует production-домен FlowPay.
-
-## Исправления
-
-- Проект поднят до `1.3.4`; `package.json` и `package-lock.json` синхронизированы.
-- React / React DOM / React Is закреплены на `19.1.9`.
-- Next.js оставлен на текущей линии `15.5.23`.
-- PostCSS и Sharp закреплены/override-нуты на исправленных версиях, уже выбранных проектом.
-- Исправлена несовместимость PostgreSQL `42P13` для `flowpay_complete_onboarding(text,text,text,text)`.
-- `upgrade-v13.sql` безопасно удаляет старую сигнатуру перед пересозданием функции без `CASCADE`; критический блок заключён в транзакцию.
-- `schema.sql` больше не создаёт раннюю версию onboarding-функции с default-параметром, который конфликтует с поздней hardened-версией.
-- Усилены проверки SQL-регрессии в backend audit.
-- Исправлены строгие контракты payment/FX/provider routes, request ID, no-store и server-only проверки из предыдущих ремонтных итераций.
-- Числовые KPI используют `0` там, где ноль семантически корректен; смысловые «нет данных» по-прежнему отображаются отдельно.
+- Убран тяжёлый blurred backdrop у `Dialog`, command palette и mobile drawer. Overlay оставлен лёгким и без размытия контента страницы.
+- Добавлен `/api/geo`, использующий `x-vercel-ip-country`, `x-vercel-ip-timezone` и `x-vercel-ip-country-region` от Vercel. Невалидные/отсутствующие значения не подменяются выдуманными.
+- Onboarding автоматически предлагает страну, timezone и базовую валюту; пользователь может изменить страну и валюту перед сохранением.
+- Developer/API page получила настоящий API Playground для `/api/v1/quote`: API key остаётся только в React state вкладки, показываются HTTP status, latency и JSON body.
+- На Developer page добавлена live-проверка `/api/health` для application/database/routing.
+- Dashboard получил 30-дневный прогноз активных платёжных обязательств; если reference FX для части валют отсутствует, сумма не подменяется неполным значением.
+- Settings/Security Center показывает auth provider, дату создания аккаунта, verified MFA state, expiration текущей сессии и последние изменения API/profile из `workspace_audit_log`.
+- API empty states получили явные действия и объяснение интеграционного сценария.
+- Добавлен `scripts/v14-feature-audit.mjs` / `npm run audit:v14` для защиты новых функций от регрессий.
+- Версия проекта и lock metadata подняты до `1.4.0`.
 
 ## Пройденные проверки
 
-- `cleanup-legacy`: PASS — 14 legacy paths checked.
-- `cleanup-generated`: PASS.
-- `full-contract-audit`: PASS — 67 source files, 17 API files.
+- `full-contract-audit`: PASS — 68 source files, 18 API files.
 - `zero-ui-audit`: PASS.
-- `ui-audit`: PASS — 95 source files.
+- `ui-audit`: PASS — 96 source files.
 - `commercial-copy-audit`: PASS — 37 customer-facing files.
 - `project-audit`: PASS — local imports and production-data invariants.
 - `backend-audit`: PASS — database/API-key/rate-limit/RLS contracts.
 - `runtime-audit`: PASS — routing/FX/IBAN/BIC/CSV invariants.
 - `launch-audit`: PASS.
-- `security-audit`: PASS — 17 API routes, RLS/headers/body limits/rate limits/request IDs.
+- `security-audit`: PASS — 18 API routes, RLS/headers/body limits/rate limits/request IDs.
 - `performance-audit`: PASS.
-- `strict-mode-audit`: PASS — 40 files.
-- Raw TypeScript `tsc --noEmit`: PASS.
-- `npm ls --package-lock-only react react-dom react-is next postcss sharp`: PASS; lock tree coherent at FlowPay 1.3.4.
-- High-confidence embedded-secret literal scan on the final env-free source tree: PASS.
+- `strict-mode-audit`: PASS — 41 files.
+- `v14-feature-audit`: PASS.
+- Raw TypeScript `tsc --noEmit`: PASS using the dependency tree from the uploaded FlowPay project.
+- `npm ls --package-lock-only react react-dom react-is next postcss sharp`: PASS; lock tree coherent at FlowPay 1.4.0.
+- Env-file release guard: PASS — 0 env files in release tree.
+- High-confidence embedded-secret scan: PASS.
 
-## Что нельзя было доказать в sandbox
+## Ограничение sandbox
 
-Полный `next build` / `next typegen` не был завершён в Linux sandbox: исходный архив содержал Windows-native `node_modules`, поэтому Linux SWC binary отсутствовал. Sandbox также не смог обратиться к npm registry (`EAI_AGAIN`), чтобы установить Linux-native SWC. По той же сетевой причине online `npm audit` не получил ответ от npm audit endpoint.
+Полный `next typegen` / `next build` не может быть доказан в этой Linux-среде: загруженный локальный dependency tree содержит Windows-native Next SWC, а npm registry из sandbox недоступен (`EAI_AGAIN`), поэтому Linux SWC невозможно скачать. По той же причине здесь нельзя повторно выполнить online `npm audit`.
 
-Это ограничение проверочной среды, поэтому production build и online dependency audit должны быть окончательно подтверждены после чистого `npm ci` в Windows/Vercel/CI.
+Это ограничение среды проверки, а не скрытый PASS. Финальный production build нужно подтвердить на Windows/Vercel после `npm ci`.
 
-## Финальная проверка перед production
+## Проверка перед deploy
 
-В окружении владельца проекта:
-
-```bash
+```powershell
 npm ci
-npm run check:env
 npm run audit
 npm run typecheck
 npm run build
 npm run audit:deps
 ```
 
-`check:env` оставлен отдельной приватной проверкой и в этом аудите не запускался.
+`npm run check:env` оставлен отдельной приватной командой владельца и в этом проходе не выполнялся.

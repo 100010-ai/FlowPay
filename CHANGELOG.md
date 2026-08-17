@@ -1,5 +1,15 @@
 # FlowPay changelog
 
+## 1.4.0
+
+- Reworked modal and command-palette overlays to remove the heavy blurred backdrop while preserving focus and accessibility.
+- Added Vercel geolocation onboarding: country/timezone detection with editable country and automatic reporting-currency suggestion.
+- Added a real API Playground for `/api/v1/quote` with local-only key entry, HTTP status, latency and formatted JSON response.
+- Added live API health diagnostics for application, database and routing checks.
+- Added a 30-day payment commitments forecast to Dashboard using existing payment and FX data.
+- Expanded Security Center with sign-in provider, account creation date, verified MFA state, current-session expiry and recent access/profile audit events.
+- Improved API empty states and localized one-time secret guidance.
+
 ## 1.3.4
 
 - Final release cleanup: removed generated build output, repository internals, bundled dependencies and one-off hotfix utilities from the distributable source archive.

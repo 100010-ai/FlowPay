@@ -40,3 +40,12 @@
 - Домен, DNS, корпоративная почта и процесс поддержки.
 - Реальные тарифы/API провайдеров и коммерческое разрешение использовать их данные.
 - Внешняя система оповещений об инцидентах, если нужны уведомления вне встроенного журнала/Vercel.
+## FlowPay 1.4 product checks
+
+- [ ] Открыть любой Dialog/API-key modal: фон должен оставаться читаемым, без сильного blur/серой «плёнки».
+- [ ] На новом аккаунте onboarding должен получить country/timezone от Vercel и предложить соответствующую reporting currency; все поля должны оставаться редактируемыми.
+- [ ] В `/developer` API health должен показывать application/database/routing, а API Playground — реальный HTTP status, latency и JSON response.
+- [ ] Убедиться, что введённый в API Playground `fp_live_...` не сохраняется после reload вкладки.
+- [ ] На Dashboard проверить 30-day forecast на аккаунте с платежами в одной и нескольких валютах.
+- [ ] В Settings проверить MFA/session/access activity без раскрытия секретов.
+

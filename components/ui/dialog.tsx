@@ -33,8 +33,8 @@ export function Dialog({open,onOpenChange,title,description,children,className}:
   },[open,onOpenChange])
 
   if(!open)return null
-  return <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[rgba(20,34,25,.22)] p-0 backdrop-blur-[2px] sm:items-center sm:p-6" onMouseDown={(e)=>{if(e.target===e.currentTarget)onOpenChange(false)}}>
-    <section ref={panelRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={description?descriptionId:undefined} className={cn('fp-pop max-h-[92svh] w-full overflow-hidden rounded-t-[20px] border border-[var(--fp-border)] bg-white shadow-[var(--fp-shadow-lg)] outline-none sm:max-w-[620px] sm:rounded-[18px]',className)}>
+  return <div className="fixed inset-0 z-[100] flex items-end justify-center bg-[rgba(12,18,14,.12)] p-0 sm:items-center sm:p-6" onMouseDown={(e)=>{if(e.target===e.currentTarget)onOpenChange(false)}}>
+    <section ref={panelRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={description?descriptionId:undefined} className={cn('fp-pop max-h-[92svh] w-full overflow-hidden rounded-t-[20px] border border-[rgba(210,218,212,.95)] bg-white shadow-[0_28px_80px_rgba(18,35,24,.16),0_2px_8px_rgba(18,35,24,.06)] outline-none sm:max-w-[620px] sm:rounded-[18px]',className)}>
       <header className="flex items-start justify-between border-b border-[var(--fp-border)] px-5 py-4">
         <div><h2 id={titleId} className="text-[16px] font-semibold tracking-[-.02em]">{title}</h2>{description&&<p id={descriptionId} className="mt-1 text-[14px] leading-5 text-[var(--fp-muted)]">{description}</p>}</div>
         <button type="button" className="grid size-8 shrink-0 place-items-center rounded-lg text-[var(--fp-muted)] transition-colors hover:bg-[var(--fp-surface-muted)] hover:text-[var(--fp-text)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--fp-green-soft)]" onClick={()=>onOpenChange(false)} aria-label={closeLabel}><X size={17}/></button>
