@@ -1,6 +1,6 @@
 {
   "name": "flowpay",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -8,7 +8,7 @@
     "start": "next start",
     "typecheck": "next typegen && tsc --noEmit",
     "audit:ui": "node scripts/ui-audit.mjs",
-    "audit": "node scripts/ui-audit.mjs && node scripts/commercial-copy-audit.mjs && node scripts/project-audit.mjs && node scripts/backend-audit.mjs && node scripts/runtime-audit.cjs && node scripts/launch-audit.mjs && node scripts/security-audit.mjs && node scripts/performance-audit.mjs && node scripts/strict-mode-audit.mjs && node scripts/v14-feature-audit.mjs && node scripts/v15-feature-audit.mjs && node scripts/v16-security-audit.mjs && node scripts/v17-admin-launch-audit.mjs && node scripts/v171-account-compat-audit.mjs",
+    "audit": "node scripts/ui-audit.mjs && node scripts/commercial-copy-audit.mjs && node scripts/project-audit.mjs && node scripts/backend-audit.mjs && node scripts/runtime-audit.cjs && node scripts/launch-audit.mjs && node scripts/security-audit.mjs && node scripts/performance-audit.mjs && node scripts/strict-mode-audit.mjs && node scripts/v14-feature-audit.mjs && node scripts/v15-feature-audit.mjs && node scripts/v16-security-audit.mjs && node scripts/v17-admin-launch-audit.mjs && node scripts/v171-account-compat-audit.mjs && node scripts/v172-ux-timeout-audit.mjs",
     "audit:runtime": "node scripts/runtime-audit.cjs",
     "cleanup:legacy": "node scripts/cleanup-legacy.mjs",
     "pretypecheck": "npm run cleanup:legacy && npm run cleanup:generated",
@@ -28,7 +28,8 @@
     "audit:v16": "node scripts/v16-security-audit.mjs",
     "security:prod": "node scripts/production-security-check.mjs",
     "audit:v17": "node scripts/v17-admin-launch-audit.mjs",
-    "audit:v171": "node scripts/v171-account-compat-audit.mjs"
+    "audit:v171": "node scripts/v171-account-compat-audit.mjs",
+    "audit:v172": "node scripts/v172-ux-timeout-audit.mjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "5.2.6",

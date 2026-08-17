@@ -14,7 +14,7 @@ const settings=read('app/(workspace)/settings/page.tsx')
 
 expect(!/backdrop-blur/.test(dialog),'Dialog still uses backdrop blur')
 expect(!/bg-\[rgba\(20,34,25,\.2[02]\)\].*backdrop-blur/.test(shell),'Workspace overlays still use the legacy heavy backdrop')
-expect(onboarding.includes("fetch('/api/geo'"),'Onboarding does not request server geolocation')
+expect(onboarding.includes("fetch('/api/geo'")||onboarding.includes("fetchWithClientTimeout('/api/geo'"),'Onboarding does not request server geolocation')
 expect(onboarding.includes('defaultCurrencyForCountry'),'Onboarding does not map detected country to a reporting currency')
 expect(geo.includes("x-vercel-ip-country"),'Geo route does not use the Vercel country header')
 expect(geo.includes("x-vercel-ip-timezone"),'Geo route does not use the Vercel timezone header')

@@ -21,7 +21,9 @@ requireAll('app/api/onboarding/status/route.ts',[
   'authenticatedClient','checkRateLimit','resolveOnboardingState','UNAUTHORIZED','PROFILE_STATUS_FAILED'
 ])
 requireAll('components/AuthPage.tsx',["fetch('/api/onboarding/status'",'onboarding.completed'])
-requireAll('app/onboarding/page.tsx',["fetch('/api/onboarding/status'",'checkingAccount','aal.currentLevel','LEGAL_ACCEPTANCE_REQUIRED'])
+const onboarding=read('app/onboarding/page.tsx')
+if(!(onboarding.includes("fetch('/api/onboarding/status'")||onboarding.includes("fetchWithClientTimeout('/api/onboarding/status'"))) failures.push('app/onboarding/page.tsx missing bounded onboarding status request')
+for(const token of ['checkingAccount','aal.currentLevel','LEGAL_ACCEPTANCE_REQUIRED']) if(!onboarding.includes(token)) failures.push(`app/onboarding/page.tsx missing v1.7.1 contract: ${token}`)
 requireAll('app/api/onboarding/route.ts',['resolveOnboardingState','alreadyCompleted','ONBOARDING_ALREADY_COMPLETED','LEGAL_ACCEPTANCE_REQUIRED'])
 
 const migration=read('supabase/upgrade-v171.sql')
@@ -33,8 +35,8 @@ if(!helper.includes(".maybeSingle<LegacyProfileRow>()")) failures.push('legacy f
 
 const pkg=JSON.parse(read('package.json'))
 const lock=JSON.parse(read('package-lock.json'))
-if(pkg.version!=='1.7.1') failures.push(`expected package version 1.7.1, found ${pkg.version}`)
-if(lock.version!==pkg.version||lock.packages?.['']?.version!==pkg.version) failures.push('package-lock root metadata does not match 1.7.1')
+if(!/^1\.7\.[1-9][0-9]*$/.test(pkg.version)) failures.push(`expected package version >=1.7.1 <1.8.0, found ${pkg.version}`)
+if(lock.version!==pkg.version||lock.packages?.['']?.version!==pkg.version) failures.push('package-lock root metadata does not match package version')
 if(!String(pkg.scripts?.audit||'').includes('v171-account-compat-audit.mjs')) failures.push('main audit does not include v1.7.1 compatibility audit')
 
 if(failures.length){console.error(`FlowPay v1.7.1 compatibility audit failed with ${failures.length} issue(s):`);for(const issue of failures)console.error(`- ${issue}`);process.exit(1)}

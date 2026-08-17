@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.7.2
+
+- Fixed onboarding and MFA screens that could remain in an infinite loading/saving state when Supabase/Auth or a FlowPay endpoint stopped responding.
+- Added bounded 8–12 second client deadlines and explicit Retry states for onboarding preflight/save, MFA session checks, enrollment, challenge and verification.
+- Rebalanced the onboarding layout with fixed desktop columns, equal-height setup rows and consistent form spacing.
+- Rebuilt Security Center into equal-height columns with a stable QR/TOTP grid and clearer loading/error states.
+- Preserves the v1.7.1 legacy company recovery behavior and the v1.6 AAL2/RLS security boundary.
+
 ## 1.7.1
 
 - Fixed legacy account/company compatibility after the v1.6 AAL2 hardening.

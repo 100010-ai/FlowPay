@@ -153,7 +153,7 @@ export async function GET(request: Request) {
     const privacyReceipts = (legalAcceptances.data || []).filter(row => row.document_type === 'privacy').length
 
     return apiJson({
-      version: '1.7.1',
+      version: '1.7.2',
       generatedAt: new Date().toISOString(),
       usersTruncated: usersResult.truncated,
       metrics: {
