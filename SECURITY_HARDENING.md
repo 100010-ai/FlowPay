@@ -79,7 +79,7 @@ FlowPay 1.6 исходит из модели **zero trust внутри прил�
 
 ### Supply chain
 
-- Node runtime pinned на 24.18.1;
+- Local/CI Node runtime pinned на 24.19.0; Vercel package engine intentionally uses `24.x` because Vercel selects the patch release within the supported major;
 - exact npm dependency versions;
 - `engine-strict=true`;
 - CI GitHub Actions pinned к конкретным commit SHA;

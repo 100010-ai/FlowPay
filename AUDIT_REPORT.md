@@ -1,4 +1,4 @@
-# FlowPay 1.6.0 — security hardening audit report
+# FlowPay 1.6.1 — security hardening + Vercel runtime compatibility audit report
 
 Дата прохода: 2026-08-17.
 
@@ -74,3 +74,10 @@ npm run audit:deps
 ```
 
 `npm run check:env` остаётся отдельной приватной проверкой владельца и в этом аудите не запускался.
+
+
+## v1.6.1 runtime compatibility patch
+
+- Vercel engine declaration: `24.x` (platform-supported major-line selector).
+- Local/CI pin: Node `24.19.0`.
+- The exact Vercel patch is platform-controlled and must be verified from deployment/runtime output.

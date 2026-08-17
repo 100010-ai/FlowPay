@@ -1,5 +1,12 @@
 # FlowPay changelog
 
+## 1.6.1
+
+- Fixed Vercel `EBADENGINE`: `package.json` now declares the Vercel-supported Node major line `24.x` instead of an unavailable exact patch floor.
+- Updated local/CI pin to the real current Node.js 24 LTS release `24.19.0`.
+- Kept production security guidance explicit: Vercel controls the exact patch inside `24.x`, so the deployed `process.version` must be checked after release.
+- Retains the v1.6 R2 deadlock-safe Supabase migration unchanged.
+
 ## 1.6.0
 
 - Added mandatory TOTP/AAL2 step-up before workspace financial data and sensitive mutations.
@@ -10,7 +17,7 @@
 - Hardened API credentials with `quote:read` scope, 30/60/90-day expiry, active-key cap and expiry enforcement.
 - Applied request-scoped nonce CSP across HTML, removed `unsafe-inline` from production `script-src`, disabled production source maps and expanded security headers.
 - Reduced service-role usage on normal user flows and enforced AAL2 before authenticated quote/audit persistence.
-- Pinned Node 24.18.1 and CI actions to exact commit SHAs, added CodeQL and blocked automated semver-major dependency jumps.
+- Pinned the Node 24 LTS line and CI actions to exact commit SHAs, added CodeQL and blocked automated semver-major dependency jumps.
 - Added `supabase/upgrade-v16.sql`, `SECURITY_HARDENING.md` and `npm run audit:v16`.
 
 ## 1.4.0
@@ -161,3 +168,9 @@
 - Stores accepted document versions and timestamps in Supabase Auth user metadata.
 - Replaced payment, counterparty, invoice and API-key creation form modals with dedicated workspace pages while preserving the left navigation shell.
 - Kept destructive actions as confirmation flows instead of form modals.
+
+### 1.6.0 migration R2
+- Reworked `supabase/upgrade-v16.sql` to avoid long-lived multi-table DDL locks.
+- MFA policy installation now commits one sensitive table at a time with bounded lock waits.
+- Safe to rerun after PostgreSQL `40P01` deadlock failures.
+

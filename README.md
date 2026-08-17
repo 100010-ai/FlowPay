@@ -11,7 +11,7 @@ FlowPay — B2B-сервис для сравнения маршрутов меж
 - `/register` больше не вызывает Supabase signup напрямую из браузера: same-origin server endpoint ограничивает body/rate и записывает server-trusted legal receipts.
 - API keys получили `quote:read`, 30/60/90-day lifetime, active-key cap и обязательный AAL2 lifecycle.
 - HTML использует request-scoped nonce CSP; production `script-src` без `unsafe-inline`; расширены security headers и отключены browser source maps.
-- CI hardening: Node 24.18.1, pinned GitHub Action SHA, CodeQL, no automatic semver-major Dependabot jumps.
+- CI hardening: Node 24.19.0 in CI/local tooling; Vercel uses the platform-managed 24.x patch, pinned GitHub Action SHA, CodeQL, no automatic semver-major Dependabot jumps.
 - Добавлен отдельный `SECURITY_HARDENING.md` и `npm run audit:v16`.
 
 ## Что нового в 1.5

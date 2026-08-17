@@ -50,7 +50,7 @@ npm run audit:deps
 
 ## 4. Vercel
 
-- production runtime должен соответствовать `.nvmrc` / package engine: Node 24.18.1;
+- локально и в CI используйте Node 24.19.0; для Vercel `package.json` использует `24.x`, потому что Vercel принимает major line и сам выбирает доступный patch. Проверяйте фактический `process.version` после deploy;
 - 2FA/passkey для team owners;
 - Preview Deployment Protection, если previews не публичны;
 - WAF/managed OWASP protections;

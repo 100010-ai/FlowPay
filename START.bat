@@ -4,14 +4,14 @@ cd /d "%~dp0"
 
 where node >nul 2>nul
 if errorlevel 1 (
-  echo [FlowPay] Node.js was not found. Install Node.js 24.18.1 or newer within the 24.x LTS line and run this file again.
+  echo [FlowPay] Node.js was not found. Install Node.js 24.19.0 or newer within the 24.x LTS line and run this file again.
   pause
   exit /b 1
 )
 
-node -e "const [a,b,c]=process.versions.node.split('.').map(Number);process.exit(a===24 && (b>18 || (b===18 && c>=1)) ? 0 : 1)" >nul 2>nul
+node -e "const [a,b,c]=process.versions.node.split('.').map(Number);process.exit(a===24 && (b>19 || (b===19 && c>=0)) ? 0 : 1)" >nul 2>nul
 if errorlevel 1 (
-  echo [FlowPay] Node.js 24.18.1 or newer within the 24.x LTS line is required.
+  echo [FlowPay] Node.js 24.19.0 or newer within the 24.x LTS line is required.
   pause
   exit /b 1
 )

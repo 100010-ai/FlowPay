@@ -101,11 +101,11 @@ requireAll('scripts/production-security-check.mjs',["script-src permits unsafe-i
 
 
 requireAll('app/(workspace)/settings/security/page.tsx',["auth.mfa.unenroll","auth.refreshSession","signOut({ scope: 'global' })"])
-requireAll('.github/workflows/ci.yml',["actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1","persist-credentials: false","actions/setup-node@820762786026740c76f36085b0efc47a31fe5020","node-version: '24.18.1'","package-manager-cache: false"])
+requireAll('.github/workflows/ci.yml',["actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1","persist-credentials: false","actions/setup-node@820762786026740c76f36085b0efc47a31fe5020","node-version: '24.19.0'","package-manager-cache: false"])
 requireAll('.github/workflows/codeql.yml',["github/codeql-action/init@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81","github/codeql-action/analyze@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81","javascript-typescript","security-events: write"])
 requireAll('.github/dependabot.yml',["version-update:semver-major","package-ecosystem: github-actions"])
-if(read('.nvmrc').trim()!=='24.18.1')failures.push('Node runtime is not pinned to 24.18.1')
-if(pkg.engines?.node!=='>=24.18.1 <25')failures.push(`Node engine is not security-pinned: ${pkg.engines?.node||'missing'}`)
+if(read('.nvmrc').trim()!=='24.19.0')failures.push('Local/CI Node runtime is not pinned to 24.19.0')
+if(pkg.engines?.node!=='24.x')failures.push(`Vercel Node engine is not platform-compatible: ${pkg.engines?.node||'missing'}`)
 
 if(failures.length){console.error(`FlowPay v1.6 security audit failed with ${failures.length} issue(s):`);for(const issue of failures)console.error(`- ${issue}`);process.exit(1)}
 console.log('FlowPay v1.6 security audit passed: nonce CSP, AAL2/MFA, RLS, mutation gates, API-key expiry and legacy cleanup verified.')

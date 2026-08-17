@@ -1,8 +1,12 @@
 -- FlowPay 1.6 — mandatory MFA, least privilege and API credential hardening
 -- Run after upgrade-v15.sql. This migration does not inspect or modify env values.
 -- AAL2 is enforced in Postgres so an aal1 JWT cannot bypass the application UI.
+-- Deadlock-safe R2: lock-heavy DDL is committed in short, table-scoped transactions.
+-- Safe to rerun after a failed v1.6 attempt; statements are idempotent by design.
 
 begin;
+set local lock_timeout = '10s';
+set local statement_timeout = '120s';
 
 -- Public schema is usable by API roles but cannot be used by browser roles to
 -- create shadow objects/functions that could later be referenced accidentally.
@@ -27,33 +31,173 @@ $$;
 revoke all on function public.flowpay_require_aal2() from public, anon;
 grant execute on function public.flowpay_require_aal2() to authenticated;
 
+commit;
+
 -- Every sensitive workspace table requires an AAL2 JWT even for SELECT. Existing
 -- ownership policies still apply; this is an additional RESTRICTIVE gate.
-do $$
-declare t text;
-begin
-  foreach t in array array[
-    'calculations','audit_requests','company_profiles','counterparties','payment_drafts',
-    'api_keys','workspace_invitations','invoices','api_request_logs','workspace_audit_log','api_usage_daily'
-  ] loop
-    execute format('alter table public.%I enable row level security', t);
-    execute format('alter table public.%I force row level security', t);
-    execute format('drop policy if exists "mfa aal2 gate" on public.%I', t);
-    execute format(
-      'create policy "mfa aal2 gate" on public.%I as restrictive for all to authenticated using ((select auth.jwt()->>''aal'') = ''aal2'') with check ((select auth.jwt()->>''aal'') = ''aal2'')',
-      t
-    );
-  end loop;
-end $$;
+-- Each table is handled in its own transaction. The ACCESS EXCLUSIVE lock is
+-- acquired first, so this migration never accumulates strong locks on multiple
+-- workspace tables while waiting for live application queries.
+
+begin;
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
+lock table public.calculations in access exclusive mode;
+alter table public.calculations enable row level security;
+alter table public.calculations force row level security;
+drop policy if exists "mfa aal2 gate" on public.calculations;
+create policy "mfa aal2 gate" on public.calculations
+  as restrictive for all to authenticated
+  using ((select auth.jwt()->>'aal') = 'aal2')
+  with check ((select auth.jwt()->>'aal') = 'aal2');
+commit;
+
+begin;
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
+lock table public.audit_requests in access exclusive mode;
+alter table public.audit_requests enable row level security;
+alter table public.audit_requests force row level security;
+drop policy if exists "mfa aal2 gate" on public.audit_requests;
+create policy "mfa aal2 gate" on public.audit_requests
+  as restrictive for all to authenticated
+  using ((select auth.jwt()->>'aal') = 'aal2')
+  with check ((select auth.jwt()->>'aal') = 'aal2');
+commit;
+
+begin;
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
+lock table public.company_profiles in access exclusive mode;
+alter table public.company_profiles enable row level security;
+alter table public.company_profiles force row level security;
+drop policy if exists "mfa aal2 gate" on public.company_profiles;
+create policy "mfa aal2 gate" on public.company_profiles
+  as restrictive for all to authenticated
+  using ((select auth.jwt()->>'aal') = 'aal2')
+  with check ((select auth.jwt()->>'aal') = 'aal2');
+commit;
+
+begin;
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
+lock table public.counterparties in access exclusive mode;
+alter table public.counterparties enable row level security;
+alter table public.counterparties force row level security;
+drop policy if exists "mfa aal2 gate" on public.counterparties;
+create policy "mfa aal2 gate" on public.counterparties
+  as restrictive for all to authenticated
+  using ((select auth.jwt()->>'aal') = 'aal2')
+  with check ((select auth.jwt()->>'aal') = 'aal2');
+commit;
+
+begin;
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
+lock table public.payment_drafts in access exclusive mode;
+alter table public.payment_drafts enable row level security;
+alter table public.payment_drafts force row level security;
+drop policy if exists "mfa aal2 gate" on public.payment_drafts;
+create policy "mfa aal2 gate" on public.payment_drafts
+  as restrictive for all to authenticated
+  using ((select auth.jwt()->>'aal') = 'aal2')
+  with check ((select auth.jwt()->>'aal') = 'aal2');
+commit;
+
+begin;
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
+lock table public.api_keys in access exclusive mode;
+alter table public.api_keys enable row level security;
+alter table public.api_keys force row level security;
+drop policy if exists "mfa aal2 gate" on public.api_keys;
+create policy "mfa aal2 gate" on public.api_keys
+  as restrictive for all to authenticated
+  using ((select auth.jwt()->>'aal') = 'aal2')
+  with check ((select auth.jwt()->>'aal') = 'aal2');
+commit;
+
+begin;
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
+lock table public.workspace_invitations in access exclusive mode;
+alter table public.workspace_invitations enable row level security;
+alter table public.workspace_invitations force row level security;
+drop policy if exists "mfa aal2 gate" on public.workspace_invitations;
+create policy "mfa aal2 gate" on public.workspace_invitations
+  as restrictive for all to authenticated
+  using ((select auth.jwt()->>'aal') = 'aal2')
+  with check ((select auth.jwt()->>'aal') = 'aal2');
+commit;
+
+begin;
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
+lock table public.invoices in access exclusive mode;
+alter table public.invoices enable row level security;
+alter table public.invoices force row level security;
+drop policy if exists "mfa aal2 gate" on public.invoices;
+create policy "mfa aal2 gate" on public.invoices
+  as restrictive for all to authenticated
+  using ((select auth.jwt()->>'aal') = 'aal2')
+  with check ((select auth.jwt()->>'aal') = 'aal2');
+commit;
+
+begin;
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
+lock table public.api_request_logs in access exclusive mode;
+alter table public.api_request_logs enable row level security;
+alter table public.api_request_logs force row level security;
+drop policy if exists "mfa aal2 gate" on public.api_request_logs;
+create policy "mfa aal2 gate" on public.api_request_logs
+  as restrictive for all to authenticated
+  using ((select auth.jwt()->>'aal') = 'aal2')
+  with check ((select auth.jwt()->>'aal') = 'aal2');
+commit;
+
+begin;
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
+lock table public.workspace_audit_log in access exclusive mode;
+alter table public.workspace_audit_log enable row level security;
+alter table public.workspace_audit_log force row level security;
+drop policy if exists "mfa aal2 gate" on public.workspace_audit_log;
+create policy "mfa aal2 gate" on public.workspace_audit_log
+  as restrictive for all to authenticated
+  using ((select auth.jwt()->>'aal') = 'aal2')
+  with check ((select auth.jwt()->>'aal') = 'aal2');
+commit;
+
+begin;
+set local lock_timeout = '10s';
+set local statement_timeout = '60s';
+lock table public.api_usage_daily in access exclusive mode;
+alter table public.api_usage_daily enable row level security;
+alter table public.api_usage_daily force row level security;
+drop policy if exists "mfa aal2 gate" on public.api_usage_daily;
+create policy "mfa aal2 gate" on public.api_usage_daily
+  as restrictive for all to authenticated
+  using ((select auth.jwt()->>'aal') = 'aal2')
+  with check ((select auth.jwt()->>'aal') = 'aal2');
+commit;
 
 -- Team invitations are not exposed as a direct browser write surface in v1.6.
+begin;
+set local lock_timeout = '10s';
+lock table public.workspace_invitations in access exclusive mode;
 drop policy if exists "workspace invitations own insert" on public.workspace_invitations;
 drop policy if exists "workspace invitations own update" on public.workspace_invitations;
 drop policy if exists "workspace invitations own delete" on public.workspace_invitations;
 revoke insert, update, delete on public.workspace_invitations from authenticated;
+commit;
 
 -- API credentials are least-privilege and short-lived. Existing active keys get
 -- a fresh 90-day migration window rather than being invalidated immediately.
+begin;
+set local lock_timeout = '10s';
+set local statement_timeout = '120s';
+lock table public.api_keys in access exclusive mode;
 alter table public.api_keys add column if not exists scope text;
 alter table public.api_keys add column if not exists expires_at timestamptz;
 update public.api_keys set scope='quote:read' where scope is null or trim(scope)='';
@@ -77,12 +221,22 @@ create index if not exists api_keys_hash_state_idx on public.api_keys(key_hash,r
 revoke select on public.api_keys from authenticated;
 grant select (id,user_id,name,key_prefix,scope,expires_at,last_used_at,created_at,revoked_at) on public.api_keys to authenticated;
 
+commit;
+
 -- Legal evidence must be minted by FlowPay's same-origin registration endpoint,
 -- not from caller-controlled Auth user_metadata. Existing v1.5 metadata-backed
 -- receipts are preserved as legacy evidence but are NOT promoted to trusted
 -- registration receipts; incomplete legacy accounts must use the v1.6 legal flow.
+begin;
+set local lock_timeout = '10s';
 drop trigger if exists flowpay_record_signup_legal_acceptances on auth.users;
 drop function if exists public.flowpay_record_signup_legal_acceptances();
+commit;
+
+begin;
+set local lock_timeout = '10s';
+set local statement_timeout = '120s';
+lock table public.legal_acceptances in access exclusive mode;
 do $$
 declare constraint_name text;
 begin
@@ -102,6 +256,11 @@ alter table public.legal_acceptances add constraint legal_acceptances_source_che
   check (source in ('registration_server','reacceptance','legacy_registration')) not valid;
 alter table public.legal_acceptances validate constraint legal_acceptances_source_check;
 
+commit;
+
+begin;
+set local lock_timeout = '10s';
+set local statement_timeout = '120s';
 -- This minimal status RPC is intentionally available at AAL1 so login can decide
 -- whether onboarding must run without exposing the company profile row.
 create or replace function public.flowpay_onboarding_status()
@@ -219,13 +378,43 @@ $$;
 revoke all on function public.flowpay_update_profile(text,text,text,text,text,text,text,boolean,boolean,boolean,boolean,boolean) from public, anon;
 grant execute on function public.flowpay_update_profile(text,text,text,text,text,text,text,boolean,boolean,boolean,boolean,boolean) to authenticated;
 
+commit;
+
 -- Browser table writes stay revoked; mutations go through validated RPCs below.
+begin;
+set local lock_timeout = '10s';
+lock table public.payment_drafts in access exclusive mode;
 revoke insert, update, delete on public.payment_drafts from authenticated;
+commit;
+begin;
+set local lock_timeout = '10s';
+lock table public.counterparties in access exclusive mode;
 revoke insert, update, delete on public.counterparties from authenticated;
+commit;
+begin;
+set local lock_timeout = '10s';
+lock table public.invoices in access exclusive mode;
 revoke insert, update, delete on public.invoices from authenticated;
+commit;
+begin;
+set local lock_timeout = '10s';
+lock table public.api_keys in access exclusive mode;
 revoke insert, update, delete on public.api_keys from authenticated;
+commit;
+begin;
+set local lock_timeout = '10s';
+lock table public.calculations in access exclusive mode;
 revoke insert, update, delete on public.calculations from authenticated;
+commit;
+begin;
+set local lock_timeout = '10s';
+lock table public.company_profiles in access exclusive mode;
 revoke insert, update on public.company_profiles from authenticated;
+commit;
+
+begin;
+set local lock_timeout = '10s';
+set local statement_timeout = '180s';
 
 create or replace function public.flowpay_upsert_payment(
   p_payment_id uuid,
@@ -626,6 +815,11 @@ $$;
 revoke all on function public.flowpay_import_invoices(jsonb) from public;
 grant execute on function public.flowpay_import_invoices(jsonb) to authenticated;
 
+commit;
+
+begin;
+set local lock_timeout = '10s';
+set local statement_timeout = '120s';
 -- Revoke callable access to every FlowPay function first, including legacy
 -- trigger helpers. Then grant only the explicit RPC allowlist. This prevents an
 -- older SECURITY DEFINER function from retaining PostgreSQL's default PUBLIC
@@ -661,5 +855,8 @@ grant execute on function public.flowpay_import_invoices(jsonb) to authenticated
 grant execute on function public.flowpay_check_rate_limit(text,text,integer,integer) to service_role;
 grant execute on function public.flowpay_record_api_usage(uuid,text,integer,integer) to service_role;
 grant execute on function public.flowpay_prune_operational_data() to service_role;
-
 commit;
+
+reset lock_timeout;
+reset statement_timeout;
+
