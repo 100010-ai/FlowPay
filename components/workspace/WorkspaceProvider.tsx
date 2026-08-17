@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { usePathname, useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
+import { withClientTimeout } from '@/lib/client-timeout'
 import type { ApiKeyRow, ApiRequestLog, ApiUsageDaily, AuditRequest, Calculation, CompanyProfile, Counterparty, Invoice, PaymentDraft, ProviderRuleSummary, WorkspaceAuditLog } from '@/lib/types'
 
 type WorkspaceState = {
@@ -61,7 +62,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       let user = authCache.current.user
       const mustValidateAuth = force || !user || Date.now() - authCache.current.validatedAt > 60_000
       if (mustValidateAuth) {
-        const { data: auth, error: authError } = await supabase.auth.getUser()
+        const { data: auth, error: authError } = await withClientTimeout(supabase.auth.getUser(), 8_000, 'WORKSPACE_AUTH_TIMEOUT')
         if (authError) throw authError
         user = auth.user
         authCache.current = { user, validatedAt: Date.now() }
@@ -72,7 +73,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         return
       }
       const uid = user.id
-      const { data: aal, error: aalError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+      const { data: aal, error: aalError } = await withClientTimeout(supabase.auth.mfa.getAuthenticatorAssuranceLevel(), 8_000, 'WORKSPACE_MFA_TIMEOUT')
       if (aalError) throw aalError
       const currentLevel = aal.currentLevel
       const nextLevel = aal.nextLevel
@@ -129,7 +130,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       if ((inDeveloper || pathname === '/reports') && stale('apiUsage', 30_000)) jobs.push({ name: 'apiUsage', promise: supabase.from('api_usage_daily').select('user_id,endpoint,usage_date,request_count,success_count,error_count,total_duration_ms,max_duration_ms,updated_at').eq('user_id', uid).order('usage_date', { ascending: false }).limit(365) })
       if ((inPayments || inSettings || ['/routes','/analytics'].includes(pathname)) && stale('providerRules', 60_000)) jobs.push({ name: 'providerRules', promise: supabase.from('provider_rules').select('id,provider_code,display_name,from_country,to_country,currencies,active,source_updated_at').eq('active', true).limit(1000) })
 
-      const results = await Promise.all(jobs.map(async job => [job.name, await job.promise] as const))
+      const results = await withClientTimeout(Promise.all(jobs.map(async job => [job.name, await job.promise] as const)), 15_000, 'WORKSPACE_DATA_TIMEOUT')
       const resultMap = new Map<JobName, { data: unknown; error: { message?: string } | null }>(results)
       const failed = results.find(([, result]) => result.error)?.[1].error
       if (failed) throw new Error(failed.message || 'WORKSPACE_LOAD_FAILED')

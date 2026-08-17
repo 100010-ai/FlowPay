@@ -14,7 +14,7 @@ requireAll('lib/admin-api.ts',['requireAal2','isFlowPayAdmin','checkRateLimit','
 requireAll('app/api/admin/access/route.ts',['requireFlowPayAdmin','admin: true'])
 requireAll('app/api/admin/overview/route.ts',[
   'admin.auth.admin.listUsers','company_profiles','payment_drafts','invoices','counterparties','api_keys','api_request_logs','api_usage_daily',
-  'workspace_audit_log','system_event_logs','legal_acceptances','provider_rules','systemErrors24h','apiRequests7d','apiSuccessRate','coverage','version: \'1.7.2\''
+  'workspace_audit_log','system_event_logs','legal_acceptances','provider_rules','systemErrors24h','apiRequests7d','apiSuccessRate','coverage','version: \'1.7.3\''
 ])
 requireAll('components/admin/AdminConsole.tsx',[
   "'overview' | 'users' | 'operations' | 'api' | 'security' | 'routes'",'Launch Center','downloadCsv','API-ключи','Workspace audit trail',

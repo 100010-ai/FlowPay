@@ -40,7 +40,7 @@ export default function SecuritySetupPage() {
       const { data: user, error: userError } = await withClientTimeout(client.auth.getUser(), 8_000, 'MFA_USER_TIMEOUT')
       if (userError) throw userError
       if (!user.user) {
-        router.replace('/login')
+        window.location.replace('/login')
         return
       }
       const [{ data: aal, error: aalError }, { data: factors, error: factorsError }] = await Promise.all([
@@ -120,8 +120,7 @@ export default function SecuritySetupPage() {
       setMessage(ru ? 'TOTP-фактор подтверждён. Сессия защищена AAL2.' : 'TOTP factor verified. The session is protected with AAL2.')
       await load(false)
       if (new URLSearchParams(window.location.search).get('required') === '1') {
-        router.replace(nextPath)
-        router.refresh()
+        window.location.replace(nextPath)
       }
     } catch (err) {
       setError(err instanceof ClientTimeoutError ? timeoutMessage : (ru ? 'Код не подтверждён. Проверьте код и время на устройстве, затем попробуйте снова.' : 'The code could not be verified. Check the code and device time, then try again.'))
@@ -145,7 +144,7 @@ export default function SecuritySetupPage() {
       const { error: refreshError } = await withClientTimeout(client.auth.refreshSession(), 10_000, 'MFA_REFRESH_TIMEOUT')
       if (refreshError) throw refreshError
       await withClientTimeout(client.auth.signOut({ scope: 'global' }), 10_000, 'MFA_SIGNOUT_TIMEOUT')
-      router.replace('/login?security=mfa-removed')
+      window.location.replace('/login?security=mfa-removed')
     } catch (err) {
       setError(err instanceof ClientTimeoutError ? timeoutMessage : (ru ? 'Не удалось удалить фактор.' : 'Could not remove the factor.'))
     } finally {

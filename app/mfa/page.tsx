@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { FormEvent, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { ArrowLeft, KeyRound, Loader2, RefreshCw, ShieldCheck } from 'lucide-react'
 import { FlowPayLogo } from '@/components/brand/FlowPayLogo'
 import { Button } from '@/components/ui/button'
@@ -17,7 +16,6 @@ type FactorInfo = { id: string; friendly_name?: string | null }
 export default function MfaPage() {
   const { lang } = useLanguage()
   const ru = lang === 'ru'
-  const router = useRouter()
   const [factors, setFactors] = useState<FactorInfo[]>([])
   const [factorId, setFactorId] = useState('')
   const [code, setCode] = useState('')
@@ -35,20 +33,20 @@ export default function MfaPage() {
       const { data: userData, error: userError } = await withClientTimeout(client.auth.getUser(), 8_000, 'MFA_USER_TIMEOUT')
       if (userError) throw userError
       if (!userData.user) {
-        router.replace('/login')
+        window.location.replace('/login')
         return
       }
       const { data: aal, error: aalError } = await withClientTimeout(client.auth.mfa.getAuthenticatorAssuranceLevel(), 8_000, 'MFA_AAL_TIMEOUT')
       if (aalError) throw aalError
       if (aal.currentLevel === 'aal2') {
-        router.replace(requested)
+        window.location.replace(requested)
         return
       }
       const { data: factorData, error: factorsError } = await withClientTimeout(client.auth.mfa.listFactors(), 8_000, 'MFA_FACTORS_TIMEOUT')
       if (factorsError) throw factorsError
       const verified = (factorData.totp || []).filter(item => item.status === 'verified').map(item => ({ id: item.id, friendly_name: item.friendly_name }))
       if (!verified.length) {
-        router.replace(`/settings/security?required=1&next=${encodeURIComponent(requested)}`)
+        window.location.replace(`/settings/security?required=1&next=${encodeURIComponent(requested)}`)
         return
       }
       if (!cancelled) {
@@ -63,7 +61,7 @@ export default function MfaPage() {
       }
     })
     return () => { cancelled = true }
-  }, [router, ru])
+  }, [ru])
 
   async function verify(event: FormEvent) {
     event.preventDefault()
@@ -78,8 +76,7 @@ export default function MfaPage() {
       if (verifyError) throw verifyError
       const { data: aal, error: aalError } = await withClientTimeout(client.auth.mfa.getAuthenticatorAssuranceLevel(), 8_000, 'MFA_AAL_TIMEOUT')
       if (aalError || aal.currentLevel !== 'aal2') throw aalError || new Error('AAL2_REQUIRED')
-      router.replace(nextPath)
-      router.refresh()
+      window.location.replace(nextPath)
     } catch (err) {
       setError(err instanceof ClientTimeoutError ? (ru ? '2FA-сервис отвечает слишком долго. Повторите попытку.' : 'The 2FA service is taking too long to respond. Try again.') : (ru ? 'Код не подошёл или истёк. Проверьте время на устройстве и попробуйте снова.' : 'The code is invalid or expired. Check your device time and try again.'))
       setCode('')

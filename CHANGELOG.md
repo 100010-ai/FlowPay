@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.7.3
+
+- Fixed a production redirect loop between `/onboarding` and `/settings/security` for existing accounts that are still at AAL1.
+- `WorkspaceShell` no longer interprets an intentionally RLS-hidden `company_profiles` row as missing onboarding before AAL2 is established.
+- Auth/onboarding/MFA boundary transitions now use same-tab hard navigation so a stalled App Router transition cannot leave the preflight spinner on screen indefinitely.
+- Added bounded workspace auth, MFA and data-loading deadlines to prevent a hanging Supabase request from pinning the workspace loader.
+- Added a regression audit for the exact AAL1/profile/onboarding loop observed in production.
+
 ## 1.7.2
 
 - Fixed onboarding and MFA screens that could remain in an infinite loading/saving state when Supabase/Auth or a FlowPay endpoint stopped responding.

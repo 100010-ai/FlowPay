@@ -20,7 +20,9 @@ requireAll('lib/onboarding-state.ts',[
 requireAll('app/api/onboarding/status/route.ts',[
   'authenticatedClient','checkRateLimit','resolveOnboardingState','UNAUTHORIZED','PROFILE_STATUS_FAILED'
 ])
-requireAll('components/AuthPage.tsx',["fetch('/api/onboarding/status'",'onboarding.completed'])
+const authPage=read('components/AuthPage.tsx')
+if(!(authPage.includes("fetch('/api/onboarding/status'")||authPage.includes("fetchWithClientTimeout('/api/onboarding/status'"))) failures.push('components/AuthPage.tsx missing onboarding status request')
+if(!authPage.includes('onboarding.completed')) failures.push('components/AuthPage.tsx missing v1.7.1 contract: onboarding.completed')
 const onboarding=read('app/onboarding/page.tsx')
 if(!(onboarding.includes("fetch('/api/onboarding/status'")||onboarding.includes("fetchWithClientTimeout('/api/onboarding/status'"))) failures.push('app/onboarding/page.tsx missing bounded onboarding status request')
 for(const token of ['checkingAccount','aal.currentLevel','LEGAL_ACCEPTANCE_REQUIRED']) if(!onboarding.includes(token)) failures.push(`app/onboarding/page.tsx missing v1.7.1 contract: ${token}`)

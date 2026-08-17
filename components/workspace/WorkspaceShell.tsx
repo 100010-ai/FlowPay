@@ -28,8 +28,12 @@ export function WorkspaceShell({children}:{children:React.ReactNode}){
   const [searchOpen,setSearchOpen]=useState(false);const [query,setQuery]=useState('');const [activityOpen,setActivityOpen]=useState(false);const [profileOpen,setProfileOpen]=useState(false);const [mobileOpen,setMobileOpen]=useState(false);const [adminAccess,setAdminAccess]=useState(false);const activityRef=useRef<HTMLDivElement>(null);const profileRef=useRef<HTMLDivElement>(null)
   useEffect(()=>{const fn=(e:KeyboardEvent)=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();setSearchOpen(true)}if(e.key==='Escape'){setSearchOpen(false);setActivityOpen(false);setProfileOpen(false);setMobileOpen(false)}};window.addEventListener('keydown',fn);return()=>window.removeEventListener('keydown',fn)},[])
   useEffect(()=>{const fn=(e:MouseEvent)=>{if(activityRef.current&&!activityRef.current.contains(e.target as Node))setActivityOpen(false);if(profileRef.current&&!profileRef.current.contains(e.target as Node))setProfileOpen(false)};document.addEventListener('mousedown',fn);return()=>document.removeEventListener('mousedown',fn)},[])
-  const needsSetup=!ws.loading&&Boolean(ws.user)&&(!ws.profile?.name?.trim()||!ws.profile?.country||!ws.profile?.preferred_currency)
-  useEffect(()=>{if(needsSetup)router.replace('/onboarding')},[needsSetup,router])
+  // Company profile data is intentionally unavailable to AAL1 sessions.
+  // Never infer "onboarding missing" from a null profile until AAL2 is established,
+  // otherwise /settings/security and /onboarding redirect each other forever.
+  const canEvaluateSetup=!ws.loading&&Boolean(ws.user)&&ws.mfaCurrentLevel==='aal2'
+  const needsSetup=canEvaluateSetup&&(!ws.profile?.name?.trim()||!ws.profile?.country||!ws.profile?.preferred_currency)
+  useEffect(()=>{if(needsSetup&&pathname!=='/onboarding')router.replace('/onboarding')},[needsSetup,pathname,router])
   useEffect(()=>{
     let cancelled=false
     if(!ws.user||ws.mfaCurrentLevel!=='aal2'){setAdminAccess(false);return}

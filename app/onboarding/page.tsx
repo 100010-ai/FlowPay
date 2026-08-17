@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { ArrowRight, Building2, CheckCircle2, Globe2, LocateFixed, Loader2, RotateCcw, WalletCards } from 'lucide-react'
 import { FlowPayLogo } from '@/components/brand/FlowPayLogo'
 import { CountryFlag } from '@/components/brand/CountryFlag'
@@ -26,7 +25,6 @@ type GeoResponse={country:string|null;currency:string|null;timezone:string|null;
 export default function OnboardingPage(){
   const {lang}=useLanguage()
   const c=copy[lang]
-  const router=useRouter()
   const [name,setName]=useState('')
   const [country,setCountry]=useState('')
   const [currency,setCurrency]=useState('')
@@ -42,31 +40,35 @@ export default function OnboardingPage(){
   const countries=useMemo(()=>countryOptions(lang).map(([code,label])=>({value:code,label,description:code,leading:<CountryFlag code={code}/>})),[lang])
   const currencies=useMemo(()=>currencyOptions(lang).map(item=>({value:item.code,label:item.code,description:item.name,leading:<span className="grid size-6 place-items-center rounded-[7px] bg-[#eef4ef] text-[12px] font-semibold text-[var(--fp-green-strong)]">{item.symbol}</span>})),[lang])
 
+  function hardReplace(path:string){
+    // Auth/onboarding transitions intentionally use a full same-tab navigation.
+    // sessionStorage survives, while a stalled App Router transition cannot leave
+    // this screen spinning forever.
+    window.location.replace(path)
+  }
+
   const checkAccount=useCallback(async()=>{
     setCheckingAccount(true)
     setCheckError('')
-    let redirecting=false
     try{
       const client=createClient()
       const {data}=await withClientTimeout(client.auth.getSession(),8_000,'SESSION_TIMEOUT')
       const token=data.session?.access_token
-      if(!token){redirecting=true;router.replace('/login');return}
+      if(!token){hardReplace('/login');return}
       const response=await fetchWithClientTimeout('/api/onboarding/status',{headers:{Authorization:`Bearer ${token}`},cache:'no-store'},8_000)
       if(!response.ok){throw new Error('STATUS_FAILED')}
       const status=await response.json() as {completed:boolean}
-      if(!status.completed)return
+      if(!status.completed){setCheckingAccount(false);return}
       const {data:aal,error:aalError}=await withClientTimeout(client.auth.mfa.getAuthenticatorAssuranceLevel(),8_000,'MFA_STATUS_TIMEOUT')
-      redirecting=true
-      if(aalError||!aal)router.replace('/settings/security?required=1&next=%2Fdashboard')
-      else if(aal.currentLevel==='aal2')router.replace('/dashboard')
-      else if(aal.nextLevel==='aal2')router.replace('/mfa?next=%2Fdashboard')
-      else router.replace('/settings/security?required=1&next=%2Fdashboard')
+      if(aalError||!aal){hardReplace('/settings/security?required=1&next=%2Fdashboard');return}
+      if(aal.currentLevel==='aal2'){hardReplace('/dashboard');return}
+      if(aal.nextLevel==='aal2'){hardReplace('/mfa?next=%2Fdashboard');return}
+      hardReplace('/settings/security?required=1&next=%2Fdashboard')
     }catch(err){
       setCheckError(err instanceof ClientTimeoutError?c.timeout:c.statusError)
-    }finally{
-      if(!redirecting)setCheckingAccount(false)
+      setCheckingAccount(false)
     }
-  },[c.statusError,c.timeout,router])
+  },[c.statusError,c.timeout])
 
   useEffect(()=>{void checkAccount()},[checkAccount])
 
@@ -99,11 +101,11 @@ export default function OnboardingPage(){
       const client=createClient()
       const {data}=await withClientTimeout(client.auth.getSession(),8_000,'SESSION_TIMEOUT')
       const token=data.session?.access_token
-      if(!token){router.replace('/login');return}
+      if(!token){hardReplace('/login');return}
       const response=await fetchWithClientTimeout('/api/onboarding',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({name:name.trim(),country,currency,timezone})},12_000)
       const payload=await response.json().catch(()=>({})) as {error?:string;alreadyCompleted?:boolean}
       if(!response.ok){if(payload.error==='LEGAL_ACCEPTANCE_REQUIRED'){setError(c.legal);return}throw new Error('SAVE_FAILED')}
-      router.replace('/settings/security?required=1&next=%2Fdashboard');router.refresh()
+      hardReplace('/settings/security?required=1&next=%2Fdashboard')
     }catch(err){
       setError(err instanceof ClientTimeoutError?c.timeout:c.error)
     }finally{setSaving(false)}

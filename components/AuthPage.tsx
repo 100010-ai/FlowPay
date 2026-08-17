@@ -3,11 +3,11 @@
 import Link from 'next/link'
 import { FormEvent, useMemo, useState } from 'react'
 import { ArrowLeft, ArrowRight, CheckCircle2, Eye, EyeOff, KeyRound, Loader2, LockKeyhole, ShieldCheck, Sparkles } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import { FlowPayLogo } from '@/components/brand/FlowPayLogo'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
+import { fetchWithClientTimeout, withClientTimeout } from '@/lib/client-timeout'
 import { useLanguage } from '@/components/LanguageContext'
 import type { Language } from '@/lib/types'
 
@@ -28,7 +28,7 @@ function messageFor(error:unknown,c:any){
 }
 
 export function AuthPage(){
-  const {lang}=useLanguage();const c=useMemo(()=>copy[lang],[lang]);const router=useRouter()
+  const {lang}=useLanguage();const c=useMemo(()=>copy[lang],[lang])
   const [email,setEmail]=useState('');const [password,setPassword]=useState('');const [show,setShow]=useState(false);const [loading,setLoading]=useState(false);const [message,setMessage]=useState<{kind:'error'|'success';text:string}|null>(null)
 
   async function resetPassword(){
@@ -43,18 +43,17 @@ export function AuthPage(){
     event.preventDefault();if(loading)return
     setMessage(null);setLoading(true)
     try{
-      const supabase=createClient();const {data,error}=await supabase.auth.signInWithPassword({email:email.trim(),password});if(error)throw error
+      const supabase=createClient();const {data,error}=await withClientTimeout(supabase.auth.signInWithPassword({email:email.trim(),password}),10_000,'LOGIN_TIMEOUT');if(error)throw error
       if(!data.user||!data.session?.access_token)throw new Error('UNAUTHORIZED')
-      const statusResponse=await fetch('/api/onboarding/status',{headers:{Authorization:`Bearer ${data.session.access_token}`},cache:'no-store'})
+      const statusResponse=await fetchWithClientTimeout('/api/onboarding/status',{headers:{Authorization:`Bearer ${data.session.access_token}`},cache:'no-store'},8_000)
       if(!statusResponse.ok)throw new Error('ONBOARDING_STATUS_FAILED')
       const onboarding=await statusResponse.json() as {completed:boolean}
       const target=onboarding.completed?'/dashboard':'/onboarding'
-      if(target==='/onboarding'){router.replace(target);router.refresh();return}
-      const {data:aal,error:aalError}=await supabase.auth.mfa.getAuthenticatorAssuranceLevel();if(aalError)throw aalError
-      if(aal.currentLevel==='aal2')router.replace(target)
-      else if(aal.nextLevel==='aal2')router.replace(`/mfa?next=${encodeURIComponent(target)}`)
-      else router.replace(`/settings/security?required=1&next=${encodeURIComponent(target)}`)
-      router.refresh()
+      if(target==='/onboarding'){window.location.replace(target);return}
+      const {data:aal,error:aalError}=await withClientTimeout(supabase.auth.mfa.getAuthenticatorAssuranceLevel(),8_000,'LOGIN_MFA_TIMEOUT');if(aalError)throw aalError
+      if(aal.currentLevel==='aal2')window.location.replace(target)
+      else if(aal.nextLevel==='aal2')window.location.replace(`/mfa?next=${encodeURIComponent(target)}`)
+      else window.location.replace(`/settings/security?required=1&next=${encodeURIComponent(target)}`)
     }catch(error){setMessage({kind:'error',text:messageFor(error,c)})}finally{setLoading(false)}
   }
 

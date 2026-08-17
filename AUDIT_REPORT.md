@@ -1,24 +1,17 @@
-# FlowPay 1.7.2 — onboarding/MFA UX timeout hotfix
+# FlowPay 1.7.3 — auth/onboarding redirect-loop hotfix
 
-## Root cause
+## Production incident
 
-The onboarding preflight/save flow and Supabase MFA SDK calls were awaited without a client-side deadline. A stalled network/Auth request could therefore leave the interface in `checking`, `saving` or `busy` indefinitely even though the application itself had not crashed. The onboarding and Security Center grids also used different column proportions, which made the setup screens look visually unbalanced.
+Vercel production logs showed repeated requests to `/onboarding`, `/settings/security` and `/api/onboarding/status` in the same session. The root cause was an AAL1/RLS interaction: `WorkspaceProvider` intentionally hid `company_profiles` until AAL2, while `WorkspaceShell` interpreted the resulting `profile = null` as an incomplete onboarding state and redirected back to `/onboarding`.
 
 ## Fix
 
-- Added `lib/client-timeout.ts` with bounded Promise and fetch helpers.
-- Onboarding account-status and session checks stop after 8 seconds; profile save stops after 12 seconds and exposes Retry/error UI instead of an endless spinner.
-- MFA user/AAL/factor/enroll/challenge/verify/remove flows are bounded to 8–10 seconds and fail visibly.
-- `/mfa` exposes an explicit Retry state when initial factor discovery fails or times out.
-- Onboarding now uses a fixed 420px desktop setup rail plus a flexible form column, equal-height setup rows and consistent field sizing.
-- Security Center uses equal-height two-column cards and a stable QR/secret/code layout.
-- v1.7.1 company recovery and v1.6 AAL2/RLS contracts remain intact.
+- onboarding completeness is inferred from workspace profile data only after AAL2;
+- `/settings/security` can render while the session is AAL1 without being redirected to onboarding;
+- auth-boundary redirects use `window.location.replace()` so they do not depend on a soft-router transition completing;
+- workspace auth/MFA/data waits are bounded;
+- dedicated v1.7.3 regression checks guard the loop.
 
 ## Verification
 
-- Full FlowPay audit suite: PASS
-- Security audit: PASS (21 API routes)
-- Strict-mode audit: PASS
-- v1.7.1 compatibility regression: PASS
-- v1.7.2 timeout/layout regression: PASS
-- TypeScript `tsc --noEmit`: PASS
+Run `npm run audit`, `npm run typecheck`, `npm run build`, and `npm run audit:deps` locally before push. No new SQL migration or environment variable is required.
