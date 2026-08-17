@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowRight, Building2, CheckCircle2, Globe2, LocateFixed, Loader2, RotateCcw, WalletCards } from 'lucide-react'
 import { FlowPayLogo } from '@/components/brand/FlowPayLogo'
 import { CountryFlag } from '@/components/brand/CountryFlag'
+import { CurrencyFlag } from '@/components/brand/CurrencyFlag'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { SearchSelect } from '@/components/ui/search-select'
@@ -38,7 +39,7 @@ export default function OnboardingPage(){
   const [error,setError]=useState('')
 
   const countries=useMemo(()=>countryOptions(lang).map(([code,label])=>({value:code,label,description:code,leading:<CountryFlag code={code}/>})),[lang])
-  const currencies=useMemo(()=>currencyOptions(lang).map(item=>({value:item.code,label:item.code,description:item.name,leading:<span className="grid size-6 place-items-center rounded-[7px] bg-[#eef4ef] text-[12px] font-semibold text-[var(--fp-green-strong)]">{item.symbol}</span>})),[lang])
+  const currencies=useMemo(()=>currencyOptions(lang).map(item=>({value:item.code,label:item.code,description:item.name,leading:<CurrencyFlag currency={item.code}/>})),[lang])
 
   function hardReplace(path:string){
     // Auth/onboarding transitions intentionally use a full same-tab navigation.

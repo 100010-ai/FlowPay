@@ -21,8 +21,8 @@ if(/await supabase\.auth\.mfa\.getAuthenticatorAssuranceLevel\(\)/.test(provider
 
 const pkg=JSON.parse(read('package.json'))
 const lock=JSON.parse(read('package-lock.json'))
-if(pkg.version!=='1.7.3') failures.push(`expected package version 1.7.3, found ${pkg.version}`)
-if(lock.version!==pkg.version||lock.packages?.['']?.version!==pkg.version) failures.push('package-lock root metadata does not match v1.7.3')
+if(!/^1\.(?:7\.[3-9][0-9]*|8\.\d+)$/.test(pkg.version)) failures.push(`expected package version >=1.7.3, found ${pkg.version}`)
+if(lock.version!==pkg.version||lock.packages?.['']?.version!==pkg.version) failures.push('package-lock root metadata does not match package version')
 if(!String(pkg.scripts?.audit||'').includes('v173-auth-loop-audit.mjs')) failures.push('main audit does not include v1.7.3 auth-loop audit')
 
 if(failures.length){console.error(`FlowPay v1.7.3 auth-loop audit failed with ${failures.length} issue(s):`);for(const issue of failures)console.error(`- ${issue}`);process.exit(1)}

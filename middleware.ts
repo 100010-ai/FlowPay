@@ -29,7 +29,7 @@ export function middleware(request: NextRequest) {
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ''}`,
     "script-src-attr 'none'",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob:",
+    "img-src 'self' data: blob: https://commons.wikimedia.org https://upload.wikimedia.org",
     "font-src 'self' data:",
     `connect-src ${connect}`,
     "frame-src 'none'",

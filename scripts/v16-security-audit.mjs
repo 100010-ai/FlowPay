@@ -94,7 +94,7 @@ for(const legacy of ['PaymentDialog.tsx','CounterpartyDialog.tsx','InvoiceDialog
 }
 
 const pkg=JSON.parse(read('package.json'))
-if(!/^1\.(?:6|7)\.\d+$/.test(pkg.version)) failures.push(`expected FlowPay 1.6+ security line, found ${pkg.version}`)
+if(!/^1\.(?:6|7|8)\.\d+$/.test(pkg.version)) failures.push(`expected FlowPay 1.6+ security line, found ${pkg.version}`)
 if(!String(pkg.scripts?.audit||'').includes('v16-security-audit.mjs')) failures.push('main audit does not include v1.6 security audit')
 if(pkg.scripts?.['security:prod']!=='node scripts/production-security-check.mjs') failures.push('production security smoke command is missing')
 requireAll('scripts/production-security-check.mjs',["script-src permits unsafe-inline","cross-origin /api/register","unauthenticated /api/keys","API quote without key"])

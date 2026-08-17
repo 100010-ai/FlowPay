@@ -1,5 +1,16 @@
 # Changelog
 
+## FlowPay v1.8.0 — Security identity & payment-data UX
+
+- TOTP enrollment now sets the issuer to `FlowPay`, so authenticator apps no longer label the entry as localhost.
+- MFA factors use clearer primary/backup names and secret-copy feedback.
+- Added authenticated, AAL2-protected bank directory lookup by selected country using Wikidata with a curated fallback list.
+- Bank selection can auto-fill BIC/SWIFT when the directory provides one; manual editing remains available.
+- Added optional Wikimedia bank logos with a safe host allowlist and CSP support.
+- Currency selectors now use country/currency-zone flags instead of currency symbols.
+- Standardized status badges across workspace surfaces for consistent height, baseline, border and typography.
+- Added v1.8 regression audit.
+
 ## 1.7.3
 
 - Fixed a production redirect loop between `/onboarding` and `/settings/security` for existing accounts that are still at AAL1.

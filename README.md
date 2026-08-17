@@ -238,3 +238,11 @@ curl -X POST https://flowpay-network.vercel.app/api/v1/quote \
 ## Примечание к архиву
 
 Исходный архив поставляется без `node_modules`, `.next`, `.git` и файлов окружения. Устанавливай зависимости через `npm ci` и перед production выполняй проверки из `LAUNCH_CHECKLIST.md`. Результаты аудита этой сборки находятся в `AUDIT_REPORT.md`.
+
+
+### v1.8 product polish
+
+- Authenticator apps receive `FlowPay` as the TOTP issuer.
+- Counterparty bank details include country-aware bank search with BIC autofill where available.
+- Bank directory lookup is server-side, AAL2-protected and rate-limited; no new API key is required.
+- Currency selectors use flags and status badges share one visual system.

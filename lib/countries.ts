@@ -93,3 +93,15 @@ export function isSupportedCountry(code: string) {
 export function isSupportedCurrency(code: string) {
   return (currencies as readonly string[]).includes(code.toUpperCase())
 }
+
+export function currencyFlagCountry(code: string) {
+  const normalized = code.toUpperCase()
+  if (normalized === 'EUR') return 'EU'
+  if (normalized === 'USD') return 'US'
+  if (normalized === 'XAF') return 'CM'
+  if (normalized === 'XOF') return 'SN'
+  if (normalized === 'XCD') return 'AG'
+  if (normalized === 'XPF') return 'PF'
+  const entry = Object.entries(countryCurrencyMap).find(([, currency]) => currency === normalized)
+  return entry?.[0] ?? null
+}

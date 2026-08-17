@@ -9,10 +9,12 @@ import { workspaceDictionaries } from '@/lib/workspace-i18n'
 import { workspaceCopy } from '@/lib/workspace-copy'
 import { PageHeader, EmptyState, MetricCard, StatusBadge } from '@/components/workspace/primitives'
 import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { SearchSelect } from '@/components/ui/search-select'
 import { CountryFlag } from '@/components/brand/CountryFlag'
+import { CurrencyFlag } from '@/components/brand/CurrencyFlag'
 import { countryOptions, currencyOptions } from '@/lib/countries'
 import { relativeDate } from '@/lib/metrics'
 import { userError } from '@/lib/user-error'
@@ -46,7 +48,7 @@ export default function ApiPage(){
   const active=ws.apiKeys.filter(k=>!k.revoked_at&&new Date(k.expires_at).getTime()>Date.now())
   const stats=useMemo(()=>ws.apiUsage.reduce((acc,row)=>({total:acc.total+Number(row.request_count),success:acc.success+Number(row.success_count),errors:acc.errors+Number(row.error_count)}),{total:0,success:0,errors:0}),[ws.apiUsage])
   const countries=useMemo(()=>countryOptions(lang).map(([code,label])=>({value:code,label,description:code,leading:<CountryFlag code={code}/>})),[lang])
-  const currencies=useMemo(()=>currencyOptions(lang).map(item=>({value:item.code,label:item.code,description:item.name,leading:<span className="grid size-6 place-items-center rounded-[7px] bg-[#eef4ef] text-[12px] font-semibold text-[var(--fp-green-strong)]">{item.symbol}</span>})),[lang])
+  const currencies=useMemo(()=>currencyOptions(lang).map(item=>({value:item.code,label:item.code,description:item.name,leading:<CurrencyFlag currency={item.code}/>})),[lang])
 
   async function authToken(){const mod=await import('@/lib/supabase/client');const {data}=await mod.createClient().auth.getSession();return data.session?.access_token||''}
 
@@ -88,7 +90,7 @@ export default function ApiPage(){
       <MetricCard label={lang==='ru'?'Ошибки API':'API errors'} value={String(stats.errors)} meta={stats.errors?(lang==='ru'?'проверьте журнал запросов':'review request log'):(lang==='ru'?'критичных ошибок нет':'no recorded errors')} icon={<TriangleAlert size={16}/>} className={stats.errors?'[&_strong]:text-[var(--fp-red)]':''}/>
     </div>
 
-    <Card className="mt-4 px-5 py-4"><div className="flex flex-col gap-3 md:flex-row md:items-center"><div className="flex items-center gap-2"><span className={`size-2.5 rounded-full ${health?.ok?'bg-[var(--fp-green)]':'bg-[var(--fp-amber)]'}`}/><strong className="text-[14px]">{lang==='ru'?'Состояние API':'API health'}</strong><span className="text-[13px] text-[var(--fp-muted)]">{health?(health.ok?(lang==='ru'?'Работает штатно':'Operational'):(lang==='ru'?'Требует внимания':'Needs attention')):(lang==='ru'?'Проверяем…':'Checking…')}</span></div><div className="flex flex-wrap gap-2 md:ml-auto">{health&&Object.entries(health.checks).map(([key,value])=><span key={key} className={`rounded-full px-2.5 py-1 text-[12px] font-semibold ${value?'bg-[var(--fp-green-soft)] text-[var(--fp-green-strong)]':'bg-[var(--fp-amber-soft)] text-[var(--fp-amber)]'}`}>{key}: {value?'OK':'DOWN'}</span>)}</div></div></Card>
+    <Card className="mt-4 px-5 py-4"><div className="flex flex-col gap-3 md:flex-row md:items-center"><div className="flex items-center gap-2"><span className={`size-2.5 rounded-full ${health?.ok?'bg-[var(--fp-green)]':'bg-[var(--fp-amber)]'}`}/><strong className="text-[14px]">{lang==='ru'?'Состояние API':'API health'}</strong><span className="text-[13px] text-[var(--fp-muted)]">{health?(health.ok?(lang==='ru'?'Работает штатно':'Operational'):(lang==='ru'?'Требует внимания':'Needs attention')):(lang==='ru'?'Проверяем…':'Checking…')}</span></div><div className="flex flex-wrap gap-2 md:ml-auto">{health&&Object.entries(health.checks).map(([key,value])=><Badge key={key} tone={value?'success':'warning'}>{key}: {value?'OK':'DOWN'}</Badge>)}</div></div></Card>
 
     <div className="mt-4 grid gap-4 xl:grid-cols-[.8fr_1.2fr]">
       <Card className="p-5"><div className="flex items-center justify-between"><h2 className="text-[14px] font-semibold">{t.api.keys}</h2><KeyRound size={16} className="text-[var(--fp-green)]"/></div>{ws.apiKeys.length?<div className="mt-4 divide-y divide-[var(--fp-border)]">{ws.apiKeys.map(k=>{const expired=new Date(k.expires_at).getTime()<=Date.now();const status=k.revoked_at?'revoked':expired?'expired':'active';return <div key={k.id} className="py-3"><div className="flex items-start justify-between gap-3"><div><strong className="block text-[14px]">{k.name}</strong><code className="mt-1 block text-[14px] text-[var(--fp-muted)]">{k.key_prefix}••••••••••</code><span className="mt-1 block text-[11px] text-[var(--fp-subtle)]">scope: {k.scope} · {lang==='ru'?'до':'until'} {new Date(k.expires_at).toLocaleDateString(lang)}</span></div><StatusBadge status={status}/></div><div className="mt-2 flex items-center justify-between"><span className="text-[14px] text-[var(--fp-muted)]">{t.api.lastUsed}: {relativeDate(k.last_used_at,lang)}</span>{!k.revoked_at&&!expired&&<button onClick={()=>revoke(k.id)} className="inline-flex items-center gap-1 text-[14px] font-medium text-[var(--fp-red)]"><ShieldX size={11}/>{t.api.revoke}</button>}</div></div>})}</div>:<div className="mt-4"><EmptyState compact title={t.api.noKeys} description={lang==='ru'?'Создайте ключ, чтобы подключить сервер, CRM или внутренний финансовый сервис.':'Create a key to connect your server, CRM or internal finance system.'} actionLabel={t.api.create} onAction={()=>router.push('/developer/keys/new')}/></div>}</Card>

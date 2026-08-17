@@ -1,17 +1,19 @@
-# FlowPay 1.7.3 — auth/onboarding redirect-loop hotfix
+# FlowPay v1.8.0 audit report
 
-## Production incident
+Release focus: branded TOTP identity, bank-directory UX, currency flags and consistent status badges.
 
-Vercel production logs showed repeated requests to `/onboarding`, `/settings/security` and `/api/onboarding/status` in the same session. The root cause was an AAL1/RLS interaction: `WorkspaceProvider` intentionally hid `company_profiles` until AAL2, while `WorkspaceShell` interpreted the resulting `profile = null` as an incomplete onboarding state and redirected back to `/onboarding`.
+## Verified
 
-## Fix
+- Full FlowPay audit suite: PASS
+- Security audit: PASS (22 API routes)
+- TypeScript `tsc --noEmit`: PASS
+- Lockfile dependency tree: PASS
+- v1.8 product-polish regression audit: PASS
+- Bank directory endpoint requires AAL2 and rate limiting.
+- TOTP enrollment explicitly sets `issuer: FlowPay`.
+- Currency selectors use `CurrencyFlag`.
+- Release contains no env files, node_modules, .next or .git.
 
-- onboarding completeness is inferred from workspace profile data only after AAL2;
-- `/settings/security` can render while the session is AAL1 without being redirected to onboarding;
-- auth-boundary redirects use `window.location.replace()` so they do not depend on a soft-router transition completing;
-- workspace auth/MFA/data waits are bounded;
-- dedicated v1.7.3 regression checks guard the loop.
+## Build environment limitation
 
-## Verification
-
-Run `npm run audit`, `npm run typecheck`, `npm run build`, and `npm run audit:deps` locally before push. No new SQL migration or environment variable is required.
+The available dependency archive contains Windows native Next.js binaries. A Linux `next build` attempted to download the matching SWC package, but registry access in the sandbox failed with `EAI_AGAIN`. The source-level TypeScript compile and all project audits pass; run `npm ci` and `npm run build` on Windows/Vercel as the final build gate.
