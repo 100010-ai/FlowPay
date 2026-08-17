@@ -22,17 +22,10 @@ if %NODE_MAJOR% GEQ 25 (
 )
 
 if not exist ".env.local" (
-  if exist ".env.example" (
-    copy /y ".env.example" ".env.local" >nul
-    echo [FlowPay] Created .env.local from .env.example.
-    echo [FlowPay] Fill in the real environment values, then run START.bat again.
-    pause
-    exit /b 0
-  ) else (
-    echo [FlowPay] .env.example is missing.
-    pause
-    exit /b 1
-  )
+  echo [FlowPay] .env.local is not present.
+  echo [FlowPay] Configure environment values privately, then run START.bat again.
+  pause
+  exit /b 1
 )
 
 echo [FlowPay] Checking environment...
@@ -45,9 +38,9 @@ if errorlevel 1 (
 
 if not exist "node_modules\.bin\next.cmd" (
   echo [FlowPay] Installing dependencies...
-  call npm install --no-fund --no-audit
+  call npm ci --no-fund --no-audit
   if errorlevel 1 (
-    echo [FlowPay] npm install failed.
+    echo [FlowPay] npm ci failed.
     pause
     exit /b 1
   )

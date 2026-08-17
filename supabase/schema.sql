@@ -709,7 +709,7 @@ create or replace function public.flowpay_complete_onboarding(
   p_name text,
   p_country text,
   p_currency text,
-  p_timezone text default ''
+  p_timezone text
 )
 returns void
 language plpgsql

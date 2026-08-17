@@ -78,9 +78,8 @@ for(const sqlFile of ['supabase/schema.sql','supabase/upgrade-v10.sql','supabase
   if(!/enable row level security/i.test(text)) fail(`RLS setup missing from ${sqlFile}`)
 }
 
-// 5. Environment contract.
-const env=fs.readFileSync(path.join(root,'.env.example'),'utf8')
-for(const key of ['NEXT_PUBLIC_SUPABASE_URL','NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY','SUPABASE_SECRET_KEY','FLOWPAY_ADMIN_USER_IDS','NEXT_PUBLIC_APP_URL','CRON_SECRET']) if(!env.includes(key)) fail(`Missing ${key} in .env.example`)
+// 5. Environment values are intentionally outside the source audit.
+// Run `npm run check:env` explicitly in a trusted local/deployment environment.
 
 // 6. Package contract.
 const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'))

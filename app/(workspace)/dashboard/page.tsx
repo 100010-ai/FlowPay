@@ -49,7 +49,7 @@ export default function DashboardPage(){
       <MetricCard accent label={t.overview.volume} value={base?money(volume,base,lang,true):String(monthPayments.length)} meta={base?`${t.common.thisMonth}${fx.missing.length?` · ${lang==='ru'?'не все валюты включены':'some currencies excluded'}`:''}`:(lang==='ru'?'завершено в этом месяце':'settled this month')} icon={<CircleDollarSign size={17}/>}/>
       <MetricCard label={t.overview.savings} value={base?money(savings,base,lang,true):String(monthCalcs.length)} meta={base?(monthCalcs.length?`${monthCalcs.length} ${lang==='ru'?'сравнений маршрутов':'route comparisons'}`:t.common.noData):(lang==='ru'?'сравнений маршрутов в этом месяце':'route comparisons this month')} icon={<RouteIcon size={17}/>}/>
       <MetricCard label={t.overview.counterparties} value={String(ws.counterparties.length)} meta={ws.counterparties.length?`${ws.counterparties.filter(c=>bankDetailsState(c.bank_country,c.account_number,c.bic)==='details_ready').length} ${lang==='ru'?'с готовыми реквизитами':'ready for payment'}`:(lang==='ru'?'Добавьте первого получателя':'Add your first beneficiary')} icon={<Users size={17}/>}/>
-      <MetricCard label={t.overview.efficiency} value={score==null?'—':`${score}/100`} meta={score==null?t.overview.noPayments:score>=85?copy.common.excellent:score>=70?copy.common.good:copy.common.attention} icon={<Activity size={17}/>}/>
+      <MetricCard label={t.overview.efficiency} value={score==null?'0':`${score}/100`} meta={score==null?t.overview.noPayments:score>=85?copy.common.excellent:score>=70?copy.common.good:copy.common.attention} icon={<Activity size={17}/>}/>
     </div>
 
     <div className="mt-5 grid gap-4 xl:grid-cols-[1.35fr_.65fr]">

@@ -12,6 +12,8 @@ if(!/^\d+\.\d+\.\d+$/.test(String(pkg.version||''))) failures.push(`package vers
 const lockPath=path.join(root,'package-lock.json')
 if(fs.existsSync(lockPath)){const lock=JSON.parse(fs.readFileSync(lockPath,'utf8'));if(lock.version!==pkg.version||lock.packages?.['']?.version!==pkg.version) failures.push(`package/package-lock version mismatch (${pkg.version} vs ${lock.version}/${lock.packages?.['']?.version})`)}
 if(!String(pkg.dependencies?.recharts||'').startsWith('3.')) failures.push('Recharts v3 migration missing')
+const reactFamily=['react','react-dom','react-is'].map(name=>String(pkg.dependencies?.[name]||''))
+if(new Set(reactFamily).size!==1||reactFamily[0]!=='19.1.9') failures.push(`React security baseline must be exactly 19.1.9 across react/react-dom/react-is (got ${reactFamily.join(', ')})`)
 const next=fs.readFileSync(path.join(root,'next.config.ts'),'utf8')
 for(const header of ['Content-Security-Policy','Strict-Transport-Security','X-Content-Type-Options','X-Frame-Options','Referrer-Policy','Permissions-Policy']) if(!next.includes(header)) failures.push(`security header missing: ${header}`)
 const payment=fs.readFileSync(path.join(root,'components/workspace/PaymentDialog.tsx'),'utf8')
@@ -34,15 +36,10 @@ if([...launcher].some(byte=>byte>0x7f)) failures.push('START.bat must stay ASCII
 const workspaceProvider=fs.readFileSync(path.join(root,'components/workspace/WorkspaceProvider.tsx'),'utf8')
 if(workspaceProvider.includes('useMemo(() => createClient()')) failures.push('workspace Supabase client is initialized during prerender')
 if(!workspaceProvider.includes('const getSupabase = useCallback')) failures.push('workspace lazy Supabase initialization missing')
-const envCheck=fs.readFileSync(path.join(root,'scripts/env-check.mjs'),'utf8')
-if(!envCheck.includes("'.env.local'")) failures.push('environment check does not read .env.local')
-if(!envCheck.includes('example placeholder')) failures.push('environment check does not reject example placeholders')
 const http=fs.readFileSync(path.join(root,'lib/http.ts'),'utf8')
 if(!http.includes('export function noStoreJson')) failures.push('lib/http.ts does not export noStoreJson used by API routes')
 const providerRules=fs.readFileSync(path.join(root,'lib/provider-rules.ts'),'utf8')
 if(!providerRules.includes('export async function getProviderRuleSummaries')) failures.push('lib/provider-rules.ts does not export getProviderRuleSummaries used by provider API')
 
-const envExample=fs.readFileSync(path.join(root,'.env.example'),'utf8')
-if(!envExample.includes('SUPABASE_SECRET_KEY')||!envExample.includes('CRON_SECRET')) failures.push('production secret/cron env handoff missing')
 if(failures.length){console.error('Launch audit: FAIL\n- '+failures.join('\n- '));process.exit(1)}
 console.log('Launch audit: PASS')

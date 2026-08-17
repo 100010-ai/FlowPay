@@ -4,7 +4,6 @@ import path from 'node:path'
 const roots = ['app/api', 'lib']
 const files = []
 for (const root of roots) walk(root)
-files.push('.env.example')
 
 function walk(dir) {
   if (!fs.existsSync(dir)) return
@@ -34,6 +33,10 @@ const forbidden = [
   ['legacy provider-rule positional call', /getEligibleProviderRules\([^\n{}]+,[^\n]+,[^\n]+,[^\n]+,[^\n]+\)/],
   ['nullable route FX rate', /buildRoutes\([^\n]+(?:\?\.|\?\?|\bnull\b)/],
 ]
+
+const loadSmoke = fs.readFileSync('scripts/load-smoke.mjs','utf8')
+if(/FLOWPAY_LOAD_BASE_URL\s*\|\|/.test(loadSmoke)) failures.push('load-smoke default target fallback: scripts/load-smoke.mjs')
+
 for (const file of files) {
   const text = fs.readFileSync(file, 'utf8')
   for (const [name, pattern] of forbidden) if (pattern.test(text)) failures.push(`${name}: ${file}`)

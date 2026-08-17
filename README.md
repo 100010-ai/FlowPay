@@ -23,7 +23,7 @@ FlowPay — B2B-сервис для сравнения маршрутов меж
 ## Стек
 
 - Next.js 15.5.23 / App Router / TypeScript
-- React 19.1.1
+- React 19.1.9
 - Supabase Auth + Postgres + RLS
 - Vercel
 - Recharts 3.10.1
@@ -31,20 +31,7 @@ FlowPay — B2B-сервис для сравнения маршрутов меж
 
 ## Переменные окружения
 
-Скопируй `.env.example` в `.env.local`:
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_YOUR_PUBLIC_KEY
-
-SUPABASE_SECRET_KEY=sb_secret_YOUR_SERVER_KEY
-
-FLOWPAY_ADMIN_USER_IDS=00000000-0000-0000-0000-000000000000
-NEXT_PUBLIC_APP_URL=https://your-domain.com
-CRON_SECRET=replace-with-a-long-random-secret
-```
-
-Для `/admin` используется только `FLOWPAY_ADMIN_USER_IDS`: UUID не меняется при смене email. `SUPABASE_SECRET_KEY` и `CRON_SECRET` — только серверные секреты. Никогда не добавляй им префикс `NEXT_PUBLIC_` и не коммить реальные значения в Git.
+Файлы окружения намеренно не входят в исходный архив FlowPay. Храни реальные значения только локально и в настройках deployment-платформы. Проверка конфигурации вынесена в отдельную команду `npm run check:env` и не запускается обычным source-аудитом.
 
 ## Настройка базы
 
@@ -93,7 +80,7 @@ supabase/upgrade-v13.sql
 ## Локальный запуск
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
@@ -150,7 +137,7 @@ FlowPay возвращает только маршруты, для которы�
 Создай ключ в разделе **API**, затем:
 
 ```bash
-curl -X POST https://YOUR_DOMAIN/api/v1/quote \
+curl -X POST https://flowpay-network.vercel.app/api/v1/quote \
   -H "Authorization: Bearer $FLOWPAY_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -186,4 +173,4 @@ curl -X POST https://YOUR_DOMAIN/api/v1/quote \
 
 ## Примечание к архиву
 
-В среде сборки ChatGPT npm registry может быть недоступен. Поэтому статические/runtime/security/performance проверки выполняются здесь, а финальные `npm install`, `npm run typecheck` и `npm run build` обязательно нужно прогнать в твоём подключённом окружении или CI перед production.
+Исходный архив поставляется без `node_modules`, `.next`, `.git` и файлов окружения. Устанавливай зависимости через `npm ci` и перед production выполняй проверки из `LAUNCH_CHECKLIST.md`. Результаты аудита этой сборки находятся в `AUDIT_REPORT.md`.

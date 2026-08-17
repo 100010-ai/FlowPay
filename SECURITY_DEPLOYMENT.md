@@ -26,12 +26,12 @@
 - Проверить Database Advisors после миграции.
 - Настроить backup/PITR согласно требованиям бизнеса.
 - Наблюдать медленные запросы и добавлять индексы по фактическим query plans, а не наугад.
-- Раз в сутки вызывать `flowpay_prune_operational_logs()` через безопасный scheduler/service-role процесс. Он удаляет истёкшие rate-limit buckets, API request logs старше 90 дней и server event logs старше 30 дней. Финансовый audit log эта функция не трогает.
+- Раз в сутки вызывать `flowpay_prune_operational_data()` через безопасный scheduler/service-role процесс. Он удаляет истёкшие rate-limit buckets, API request logs старше 90 дней и server event logs старше 30 дней. Финансовый audit log эта функция не трогает.
 
 ## Перед каждым релизом
 
 ```bash
-npm install
+npm ci
 npm run check:env
 npm run audit
 npm run audit:deps

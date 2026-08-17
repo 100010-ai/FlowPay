@@ -9,6 +9,7 @@ import { getReferenceFx } from '@/lib/fx'
 import { buildRoutes } from '@/lib/routing'
 import type { QuoteRoute } from '@/lib/types'
 import { logSystemEvent } from '@/lib/server-log'
+import { safeErrorMessage } from '@/lib/security'
 
 const nullableUuid=z.string().uuid().nullable().optional()
 const nullableDate=z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional()
@@ -65,8 +66,8 @@ export async function POST(request:Request){
       }
       if(!selected){
         const rules=await getEligibleProviderRules({ fromCountry: input.fromCountry!, toCountry: input.toCountry!, sourceCurrency: input.currency, recipientCurrency: input.recipientCurrency!, amount: input.amount })
-        const fx=input.currency===input.recipientCurrency?null:await getReferenceFx(input.currency,input.recipientCurrency!)
-        const routes=buildRoutes(rules, input.amount, input.fromCountry!, input.toCountry!, input.currency===input.recipientCurrency?1:fx!.rate)
+        const routeFxRate=input.currency===input.recipientCurrency?1:(await getReferenceFx(input.currency,input.recipientCurrency!)).rate
+        const routes=buildRoutes(rules, input.amount, input.fromCountry!, input.toCountry!, routeFxRate)
         selected=routes.find(route=>route.id===input.selectedRouteId)||null
         if(!selected)return requestJson(request, {error:'ROUTE_NOT_AVAILABLE'},{status:409})
       }
@@ -85,7 +86,7 @@ export async function POST(request:Request){
     return requestJson(request, {ok:true,paymentId})
   }catch(error){
     if(error instanceof RequestBodyError)return requestJson(request, {error:error.code},{status:error.status})
-    await logSystemEvent({level:'error',source:'payments',code:'PAYMENT_SAVE_FAILED',message:error instanceof Error?error.message:String(error),userId:auth.user.id})
+    await logSystemEvent({level:'error',source:'payments',code:'PAYMENT_SAVE_FAILED',message:safeErrorMessage(error),userId:auth.user.id})
     return requestJson(request, {error:'PAYMENT_SAVE_FAILED'},{status:500})
   }
 }

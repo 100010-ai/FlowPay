@@ -1,7 +1,9 @@
 import process from 'node:process'
 import { performance } from 'node:perf_hooks'
 
-const base=(process.env.FLOWPAY_LOAD_BASE_URL||'http://localhost:3000').replace(/\/$/,'')
+const configuredBase=process.env.FLOWPAY_LOAD_BASE_URL?.trim()
+if(!configuredBase){console.error('FLOWPAY_LOAD_BASE_URL is required');process.exit(2)}
+const base=configuredBase.replace(/\/$/,'')
 const concurrency=Math.max(1,Math.min(50,Number(process.env.FLOWPAY_LOAD_CONCURRENCY||10)))
 const total=Math.max(concurrency,Math.min(2000,Number(process.env.FLOWPAY_LOAD_REQUESTS||100)))
 const timeoutMs=Math.max(1000,Math.min(30000,Number(process.env.FLOWPAY_LOAD_TIMEOUT_MS||8000)))

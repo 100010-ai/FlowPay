@@ -622,10 +622,13 @@ do $$ begin
   end if;
 end $$;
 
+begin;
 -- Company profile writes also go through validated backend/onboarding paths.
 drop policy if exists "company own insert" on public.company_profiles;
 drop policy if exists "company own update" on public.company_profiles;
 revoke insert, update on public.company_profiles from authenticated;
+
+drop function if exists public.flowpay_complete_onboarding(text,text,text,text);
 
 create or replace function public.flowpay_complete_onboarding(
   p_name text,
@@ -654,6 +657,7 @@ end;
 $$;
 revoke all on function public.flowpay_complete_onboarding(text,text,text,text) from public;
 grant execute on function public.flowpay_complete_onboarding(text,text,text,text) to authenticated;
+commit;
 
 -- Provider-rule browser exposure hardening ----------------------------------
 -- Signed-in clients only need a small non-pricing summary for product labels.

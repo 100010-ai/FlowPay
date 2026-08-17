@@ -12,6 +12,9 @@ for(const table of ['company_profiles','counterparties','payment_drafts','calcul
 }
 if(!/enable row level security/i.test(schema)){console.error('FAIL RLS is not enabled in schema');failed=true}
 if(/insert\s+into\s+public\.provider_rules/i.test(schema)){console.error('FAIL seeded provider pricing found');failed=true}
+if(/flowpay_complete_onboarding\([\s\S]*?p_timezone\s+text\s+default/i.test(schema)){console.error('FAIL onboarding schema reintroduces incompatible parameter defaults');failed=true}
+const upgrade13=fs.readFileSync('supabase/upgrade-v13.sql','utf8')
+if(!upgrade13.includes('drop function if exists public.flowpay_complete_onboarding(text,text,text,text);')){console.error('FAIL v1.3 onboarding migration does not safely replace the old defaulted function signature');failed=true}
 if(/for select to anon, authenticated using \(active = true\)/i.test(schema)||/create policy "provider rules public read"/i.test(schema)){console.error('FAIL provider pricing is anonymously readable');failed=true}
 if(!/provider rules authenticated read/i.test(schema)){console.error('FAIL authenticated provider coverage policy missing');failed=true}
 for(const fn of ['flowpay_set_payment_status','flowpay_set_invoice_status','flowpay_link_invoice_payment','flowpay_delete_payment_draft','flowpay_delete_counterparty','flowpay_upsert_payment','flowpay_upsert_counterparty','flowpay_upsert_invoice','flowpay_complete_onboarding','flowpay_check_rate_limit','flowpay_record_api_usage']){if(!schema.includes(`function public.${fn}`)){console.error(`FAIL transactional RPC missing: ${fn}`);failed=true}}

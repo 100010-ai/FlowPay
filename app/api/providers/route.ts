@@ -13,7 +13,7 @@ export async function GET(){
       display_name:rule.display_name,
       from_country:rule.from_country,
       to_country:rule.to_country,
-      currencies:rule.currencies??[],
+      currencies:rule.currencies,
       source_updated_at:rule.source_updated_at,
     }))
     return NextResponse.json({providers},{headers:{'Cache-Control':'public, s-maxage=300','X-Content-Type-Options':'nosniff'}})

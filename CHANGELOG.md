@@ -1,5 +1,15 @@
 # FlowPay changelog
 
+## 1.3.4
+
+- Final release cleanup: removed generated build output, repository internals, bundled dependencies and one-off hotfix utilities from the distributable source archive.
+- Source audits no longer read environment files; environment validation remains an explicit private command.
+- Fixed the v1.3 onboarding migration/schema signature conflict that could raise PostgreSQL 42P13 when replacing a function that previously had argument defaults.
+- Updated React, React DOM and react-is to the 19.1.9 security backport while keeping the existing Next.js line.
+- Hardened payment FX handling and server error redaction, removed an unused application-URL fallback helper, and tightened provider summary invariants.
+- CI now uses `npm ci` for reproducible installs.
+- Updated production API documentation and operational-pruning function naming.
+
 ## 1.3.2
 
 - Restored the `noStoreJson` HTTP helper expected by the newer payment API routes, with compatibility for both numeric status and `ResponseInit` call styles.
