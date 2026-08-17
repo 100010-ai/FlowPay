@@ -1,6 +1,6 @@
 {
   "name": "flowpay",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -8,7 +8,7 @@
     "start": "next start",
     "typecheck": "next typegen && tsc --noEmit",
     "audit:ui": "node scripts/ui-audit.mjs",
-    "audit": "node scripts/ui-audit.mjs && node scripts/commercial-copy-audit.mjs && node scripts/project-audit.mjs && node scripts/backend-audit.mjs && node scripts/runtime-audit.cjs && node scripts/launch-audit.mjs && node scripts/security-audit.mjs && node scripts/performance-audit.mjs && node scripts/strict-mode-audit.mjs && node scripts/v14-feature-audit.mjs",
+    "audit": "node scripts/ui-audit.mjs && node scripts/commercial-copy-audit.mjs && node scripts/project-audit.mjs && node scripts/backend-audit.mjs && node scripts/runtime-audit.cjs && node scripts/launch-audit.mjs && node scripts/security-audit.mjs && node scripts/performance-audit.mjs && node scripts/strict-mode-audit.mjs && node scripts/v14-feature-audit.mjs && node scripts/v15-feature-audit.mjs",
     "audit:runtime": "node scripts/runtime-audit.cjs",
     "cleanup:legacy": "node scripts/cleanup-legacy.mjs",
     "pretypecheck": "npm run cleanup:legacy && npm run cleanup:generated",
@@ -23,7 +23,8 @@
     "audit:deps": "npm audit --omit=dev --audit-level=high",
     "load:smoke": "node scripts/load-smoke.mjs",
     "audit:strict": "node scripts/strict-mode-audit.mjs",
-    "audit:v14": "node scripts/v14-feature-audit.mjs"
+    "audit:v14": "node scripts/v14-feature-audit.mjs",
+    "audit:v15": "node scripts/v15-feature-audit.mjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "5.2.6",

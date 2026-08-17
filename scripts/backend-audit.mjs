@@ -22,7 +22,7 @@ for(const apiFile of ['app/api/quote/route.ts','app/api/audit/route.ts','app/api
   const text=fs.readFileSync(apiFile,'utf8')
   if(!text.includes('getEligibleProviderRules')){console.error(`FAIL ${apiFile} bypasses server-side provider access`);failed=true}
 }
-for(const [file,fn] of [['app/(workspace)/payments/page.tsx','flowpay_set_payment_status'],['app/(workspace)/payments/page.tsx','flowpay_delete_payment_draft'],['app/(workspace)/invoices/page.tsx','flowpay_set_invoice_status'],['components/workspace/PaymentDialog.tsx','flowpay_link_invoice_payment'],['app/(workspace)/counterparties/page.tsx','flowpay_delete_counterparty']]){const text=fs.readFileSync(file,'utf8');if(!text.includes(fn)){console.error(`FAIL ${file} does not use ${fn}`);failed=true}}
+for(const [file,fn] of [['app/(workspace)/payments/page.tsx','flowpay_set_payment_status'],['app/(workspace)/payments/page.tsx','flowpay_delete_payment_draft'],['app/(workspace)/invoices/page.tsx','flowpay_set_invoice_status'],['components/workspace/PaymentForm.tsx','flowpay_link_invoice_payment'],['app/(workspace)/counterparties/page.tsx','flowpay_delete_counterparty']]){const text=fs.readFileSync(file,'utf8');if(!text.includes(fn)){console.error(`FAIL ${file} does not use ${fn}`);failed=true}}
 for(const endpoint of ['app/api/quote/route.ts','app/api/audit/route.ts','app/api/v1/quote/route.ts']){const source=fs.readFileSync(endpoint,'utf8');if(!source.includes('checkRateLimit')){console.error(`FAIL rate limiting missing: ${endpoint}`);failed=true}}
 const quote=fs.readFileSync('app/api/quote/route.ts','utf8')
 if(!quote.includes("from('calculations').insert")){console.error('FAIL signed-in route history is not persisted server-side');failed=true}

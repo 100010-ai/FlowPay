@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Check, CheckCircle2, Clipboard, Code2, KeyRound, Loader2, Play, Plus, Send, ShieldCheck, ShieldX, TriangleAlert } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { CheckCircle2, Clipboard, Code2, KeyRound, Loader2, Play, Plus, Send, ShieldCheck, ShieldX, TriangleAlert } from 'lucide-react'
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider'
 import { useLanguage } from '@/components/LanguageContext'
 import { workspaceDictionaries } from '@/lib/workspace-i18n'
@@ -9,7 +10,6 @@ import { workspaceCopy } from '@/lib/workspace-copy'
 import { PageHeader, EmptyState, MetricCard, StatusBadge } from '@/components/workspace/primitives'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Dialog } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { SearchSelect } from '@/components/ui/search-select'
 import { CountryFlag } from '@/components/brand/CountryFlag'
@@ -23,13 +23,9 @@ type HealthState={ok:boolean;status:string;checks:{application:boolean;database:
 export default function ApiPage(){
   const ws=useWorkspace()
   const {lang}=useLanguage()
+  const router=useRouter()
   const t=workspaceDictionaries[lang]
   const copy=workspaceCopy[lang]
-  const [open,setOpen]=useState(false)
-  const [name,setName]=useState('Production')
-  const [saving,setSaving]=useState(false)
-  const [secret,setSecret]=useState('')
-  const [copied,setCopied]=useState(false)
   const [error,setError]=useState('')
   const [origin,setOrigin]=useState('https://flowpay-network.vercel.app')
   const [playKey,setPlayKey]=useState('')
@@ -54,16 +50,6 @@ export default function ApiPage(){
 
   async function authToken(){const mod=await import('@/lib/supabase/client');const {data}=await mod.createClient().auth.getSession();return data.session?.access_token||''}
 
-  async function createKey(){
-    if(!ws.user)return
-    setSaving(true);setError('')
-    try{
-      const accessToken=await authToken();if(!accessToken)throw new Error('UNAUTHORIZED')
-      const res=await fetch('/api/keys',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${accessToken}`},body:JSON.stringify({name:name.trim()||'API key'})})
-      const data=await res.json();if(!res.ok||!data.secret)throw new Error(data.error||'KEY_CREATE_FAILED')
-      setSecret(data.secret);await ws.refresh()
-    }catch{setError(userError(lang,'api'))}finally{setSaving(false)}
-  }
 
   async function revoke(id:string){
     if(!confirm(lang==='ru'?'Отозвать этот API-ключ?':'Revoke this API key?'))return
@@ -93,7 +79,7 @@ export default function ApiPage(){
   const curl=`curl -X POST ${origin}/api/v1/quote \\\n  -H "Authorization: Bearer $FLOWPAY_API_KEY" \\\n  -H "Content-Type: application/json" \\\n  -d '{"fromCountry":"${fromCountry}","toCountry":"${toCountry}","amount":${Number(amount)||0},"sourceCurrency":"${sourceCurrency}","recipientCurrency":"${recipientCurrency}"}'`
 
   return <div className="fp-enter">
-    <PageHeader title={t.api.title} subtitle={t.api.subtitle} actions={<Button onClick={()=>{setOpen(true);setSecret('');setError('')}}><Plus size={15}/>{t.api.create}</Button>}/>
+    <PageHeader title={t.api.title} subtitle={t.api.subtitle} actions={<Button onClick={()=>router.push('/developer/keys/new')}><Plus size={15}/>{t.api.create}</Button>}/>
 
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <MetricCard label={copy.api.activeKeys} value={String(active.length)} meta={lang==='ru'?'доступны для интеграций':'available for integrations'} icon={<KeyRound size={16}/>}/>
@@ -105,7 +91,7 @@ export default function ApiPage(){
     <Card className="mt-4 px-5 py-4"><div className="flex flex-col gap-3 md:flex-row md:items-center"><div className="flex items-center gap-2"><span className={`size-2.5 rounded-full ${health?.ok?'bg-[var(--fp-green)]':'bg-[var(--fp-amber)]'}`}/><strong className="text-[14px]">{lang==='ru'?'Состояние API':'API health'}</strong><span className="text-[13px] text-[var(--fp-muted)]">{health?(health.ok?(lang==='ru'?'Работает штатно':'Operational'):(lang==='ru'?'Требует внимания':'Needs attention')):(lang==='ru'?'Проверяем…':'Checking…')}</span></div><div className="flex flex-wrap gap-2 md:ml-auto">{health&&Object.entries(health.checks).map(([key,value])=><span key={key} className={`rounded-full px-2.5 py-1 text-[12px] font-semibold ${value?'bg-[var(--fp-green-soft)] text-[var(--fp-green-strong)]':'bg-[var(--fp-amber-soft)] text-[var(--fp-amber)]'}`}>{key}: {value?'OK':'DOWN'}</span>)}</div></div></Card>
 
     <div className="mt-4 grid gap-4 xl:grid-cols-[.8fr_1.2fr]">
-      <Card className="p-5"><div className="flex items-center justify-between"><h2 className="text-[14px] font-semibold">{t.api.keys}</h2><KeyRound size={16} className="text-[var(--fp-green)]"/></div>{ws.apiKeys.length?<div className="mt-4 divide-y divide-[var(--fp-border)]">{ws.apiKeys.map(k=><div key={k.id} className="py-3"><div className="flex items-start justify-between gap-3"><div><strong className="block text-[14px]">{k.name}</strong><code className="mt-1 block text-[14px] text-[var(--fp-muted)]">{k.key_prefix}••••••••••</code></div><StatusBadge status={k.revoked_at?'revoked':'active'}/></div><div className="mt-2 flex items-center justify-between"><span className="text-[14px] text-[var(--fp-muted)]">{t.api.lastUsed}: {relativeDate(k.last_used_at,lang)}</span>{!k.revoked_at&&<button onClick={()=>revoke(k.id)} className="inline-flex items-center gap-1 text-[14px] font-medium text-[var(--fp-red)]"><ShieldX size={11}/>{t.api.revoke}</button>}</div></div>)}</div>:<div className="mt-4"><EmptyState compact title={t.api.noKeys} description={lang==='ru'?'Создайте ключ, чтобы подключить сервер, CRM или внутренний финансовый сервис.':'Create a key to connect your server, CRM or internal finance system.'} actionLabel={t.api.create} onAction={()=>setOpen(true)}/></div>}</Card>
+      <Card className="p-5"><div className="flex items-center justify-between"><h2 className="text-[14px] font-semibold">{t.api.keys}</h2><KeyRound size={16} className="text-[var(--fp-green)]"/></div>{ws.apiKeys.length?<div className="mt-4 divide-y divide-[var(--fp-border)]">{ws.apiKeys.map(k=><div key={k.id} className="py-3"><div className="flex items-start justify-between gap-3"><div><strong className="block text-[14px]">{k.name}</strong><code className="mt-1 block text-[14px] text-[var(--fp-muted)]">{k.key_prefix}••••••••••</code></div><StatusBadge status={k.revoked_at?'revoked':'active'}/></div><div className="mt-2 flex items-center justify-between"><span className="text-[14px] text-[var(--fp-muted)]">{t.api.lastUsed}: {relativeDate(k.last_used_at,lang)}</span>{!k.revoked_at&&<button onClick={()=>revoke(k.id)} className="inline-flex items-center gap-1 text-[14px] font-medium text-[var(--fp-red)]"><ShieldX size={11}/>{t.api.revoke}</button>}</div></div>)}</div>:<div className="mt-4"><EmptyState compact title={t.api.noKeys} description={lang==='ru'?'Создайте ключ, чтобы подключить сервер, CRM или внутренний финансовый сервис.':'Create a key to connect your server, CRM or internal finance system.'} actionLabel={t.api.create} onAction={()=>router.push('/developer/keys/new')}/></div>}</Card>
 
       <Card className="overflow-hidden"><div className="flex items-center justify-between border-b border-[var(--fp-border)] px-5 py-4"><h2 className="text-[14px] font-semibold">{lang==='ru'?'Последние запросы':'Recent requests'}</h2><Code2 size={16} className="text-[var(--fp-green)]"/></div>{ws.apiLogs.length?<div className="overflow-x-auto"><table className="w-full min-w-[560px] text-left text-[14px]"><thead><tr className="bg-[#fafbf8] text-[var(--fp-muted)]"><th className="px-4 py-3">{copy.api.endpoint}</th><th>{copy.api.status}</th><th>{copy.api.duration}</th><th>{copy.api.date}</th></tr></thead><tbody>{ws.apiLogs.slice(0,30).map(l=><tr key={l.id} className="border-t border-[var(--fp-border)]"><td className="px-4 py-3 font-mono">{l.endpoint}</td><td><StatusBadge status={l.status_code<400?'completed':'failed'}/><span className="ml-2 text-[var(--fp-muted)]">{l.status_code}</span></td><td className="text-[var(--fp-muted)]">{l.duration_ms==null?'—':`${l.duration_ms} ms`}</td><td className="text-[var(--fp-muted)]">{relativeDate(l.created_at,lang)}</td></tr>)}</tbody></table></div>:<div className="p-5"><EmptyState compact title={t.api.noUsage} description={lang==='ru'?'Запросы из API Playground и ваших интеграций появятся здесь автоматически.':'Requests from API Playground and your integrations will appear here automatically.'}/></div>}</Card>
     </div>
@@ -124,8 +110,6 @@ export default function ApiPage(){
 
     <Card className="mt-4 p-5 sm:p-6"><div className="flex items-center justify-between gap-3"><div><h2 className="text-[14px] font-semibold">POST /api/v1/quote</h2><p className="mt-2 text-[14px] leading-5 text-[var(--fp-muted)]">{copy.api.auth} <code className="rounded bg-[#f1f2ef] px-1.5 py-0.5">Authorization: Bearer fp_live_…</code>. {copy.api.description}</p></div><button type="button" onClick={()=>navigator.clipboard.writeText(curl)} className="grid size-9 shrink-0 place-items-center rounded-[10px] border border-[var(--fp-border)] text-[var(--fp-green)] hover:bg-[var(--fp-green-soft)]" aria-label="Copy cURL"><Clipboard size={15}/></button></div><pre className="fp-scrollbar mt-4 overflow-x-auto rounded-[11px] border border-[var(--fp-border)] bg-[#f6f8f5] p-4 text-[14px] leading-5 text-[#365042]">{curl}</pre></Card>
 
-    <Dialog open={open} onOpenChange={setOpen} title={secret?(lang==='ru'?'API-ключ создан':'API key created'):t.api.create} description={secret?t.api.secretOnce:(lang==='ru'?'Секрет будет показан только один раз. Сохраните его в менеджере секретов.':'The secret will be shown exactly once. Store it in a secrets manager.')}>
-      {secret?<div><label className="flex items-center gap-2 rounded-[10px] border border-[var(--fp-border)] bg-[#fafbf8] p-3"><code className="min-w-0 flex-1 break-all text-[14px]">{secret}</code><button onClick={async()=>{await navigator.clipboard.writeText(secret);setCopied(true);setTimeout(()=>setCopied(false),1500)}} className="grid size-8 shrink-0 place-items-center rounded-lg bg-white text-[var(--fp-green)]">{copied?<Check size={15}/>:<Clipboard size={15}/>}</button></label><Button className="mt-4 w-full" onClick={()=>setOpen(false)}>{copy.api.done}</Button></div>:<div className="space-y-4"><label className="block space-y-1.5 text-[14px] text-[var(--fp-muted)]"><span>{copy.api.keyName}</span><Input value={name} onChange={e=>setName(e.target.value)}/></label>{error&&<div className="rounded-lg bg-[var(--fp-red-soft)] p-3 text-[14px] text-[var(--fp-red)]">{error}</div>}<Button className="w-full" onClick={createKey} disabled={saving}>{saving&&<Loader2 size={14} className="animate-spin"/>}{copy.api.create}</Button></div>}
-    </Dialog>
+
   </div>
 }

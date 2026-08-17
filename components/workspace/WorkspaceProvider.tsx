@@ -70,10 +70,16 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         return
       }
       const uid = user.id
-      const highPaymentDetail = ['/dashboard','/payments','/counterparties','/analytics','/reports'].includes(pathname)
-      const highCounterpartyDetail = ['/payments','/counterparties','/invoices','/reports'].includes(pathname)
+      const inSection = (section: string) => pathname === section || pathname.startsWith(`${section}/`)
+      const inPayments = inSection('/payments')
+      const inCounterparties = inSection('/counterparties')
+      const inInvoices = inSection('/invoices')
+      const inDeveloper = inSection('/developer')
+      const inSettings = inSection('/settings')
+      const highPaymentDetail = ['/dashboard','/analytics','/reports'].includes(pathname) || inPayments || inCounterparties
+      const highCounterpartyDetail = ['/reports'].includes(pathname) || inPayments || inCounterparties || inInvoices
       const highCalculationDetail = ['/dashboard','/routes','/analytics','/reports'].includes(pathname)
-      const highAuditDetail = ['/reports','/settings','/developer'].includes(pathname)
+      const highAuditDetail = ['/reports'].includes(pathname) || inSettings || inDeveloper
 
       const jobs: Job[] = []
       const nowMs = Date.now()
@@ -90,11 +96,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       if (staleWithLimit('auditLogs', auditLogLimit, 30_000)) jobs.push({ name: 'auditLogs', promise: supabase.from('workspace_audit_log').select('id,user_id,entity_type,entity_id,action,created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(auditLogLimit) })
 
       if (pathname === '/analytics' && stale('audits', 30_000)) jobs.push({ name: 'audits', promise: supabase.from('audit_requests').select('id,user_id,email,from_country,to_country,amount,currency,recipient_currency,actual_fee,best_provider_code,estimated_best_fee,potential_saving,status,created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(300) })
-      if (['/developer','/settings'].includes(pathname) && stale('apiKeys', 30_000)) jobs.push({ name: 'apiKeys', promise: supabase.from('api_keys').select('id,user_id,name,key_prefix,last_used_at,created_at,revoked_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(100) })
-      if (['/dashboard','/counterparties','/invoices','/reports'].includes(pathname) && stale('invoices', 20_000)) jobs.push({ name: 'invoices', promise: supabase.from('invoices').select('id,user_id,counterparty_id,invoice_number,supplier_name,issue_date,due_date,amount,currency,status,reference,notes,payment_draft_id,created_at,updated_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(500) })
-      if (['/developer','/reports'].includes(pathname) && stale('apiLogs', 20_000)) jobs.push({ name: 'apiLogs', promise: supabase.from('api_request_logs').select('id,user_id,endpoint,status_code,duration_ms,request_id,created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(200) })
-      if (['/developer','/reports'].includes(pathname) && stale('apiUsage', 30_000)) jobs.push({ name: 'apiUsage', promise: supabase.from('api_usage_daily').select('user_id,endpoint,usage_date,request_count,success_count,error_count,total_duration_ms,max_duration_ms,updated_at').eq('user_id', uid).order('usage_date', { ascending: false }).limit(365) })
-      if (['/payments','/routes','/analytics','/settings'].includes(pathname) && stale('providerRules', 60_000)) jobs.push({ name: 'providerRules', promise: supabase.from('provider_rules').select('id,provider_code,display_name,from_country,to_country,currencies,active,source_updated_at').eq('active', true).limit(1000) })
+      if ((inDeveloper || inSettings) && stale('apiKeys', 30_000)) jobs.push({ name: 'apiKeys', promise: supabase.from('api_keys').select('id,user_id,name,key_prefix,last_used_at,created_at,revoked_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(100) })
+      if ((['/dashboard','/reports'].includes(pathname) || inCounterparties || inInvoices || inPayments) && stale('invoices', 20_000)) jobs.push({ name: 'invoices', promise: supabase.from('invoices').select('id,user_id,counterparty_id,invoice_number,supplier_name,issue_date,due_date,amount,currency,status,reference,notes,payment_draft_id,created_at,updated_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(500) })
+      if ((inDeveloper || pathname === '/reports') && stale('apiLogs', 20_000)) jobs.push({ name: 'apiLogs', promise: supabase.from('api_request_logs').select('id,user_id,endpoint,status_code,duration_ms,request_id,created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(200) })
+      if ((inDeveloper || pathname === '/reports') && stale('apiUsage', 30_000)) jobs.push({ name: 'apiUsage', promise: supabase.from('api_usage_daily').select('user_id,endpoint,usage_date,request_count,success_count,error_count,total_duration_ms,max_duration_ms,updated_at').eq('user_id', uid).order('usage_date', { ascending: false }).limit(365) })
+      if ((inPayments || inSettings || ['/routes','/analytics'].includes(pathname)) && stale('providerRules', 60_000)) jobs.push({ name: 'providerRules', promise: supabase.from('provider_rules').select('id,provider_code,display_name,from_country,to_country,currencies,active,source_updated_at').eq('active', true).limit(1000) })
 
       const results = await Promise.all(jobs.map(async job => [job.name, await job.promise] as const))
       const resultMap = new Map<JobName, { data: unknown; error: { message?: string } | null }>(results)

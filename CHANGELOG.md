@@ -140,3 +140,11 @@
 - Added dual-currency route quotes and ECB reference conversion for recipient estimates.
 - Added API key hashing, API request logs, workspace audit log and v1.0 Supabase migration.
 - Added CSV import/export, IBAN/BIC validation and runtime/static audit scripts.
+
+## 1.5.0 — Auth, legal and workspace navigation
+- Redesigned sign-in page and separated registration into `/register`.
+- Added versioned Privacy Policy and Terms of Service with printable public pages.
+- Registration requires scrolling each legal document to the end before acknowledgement/acceptance.
+- Stores accepted document versions and timestamps in Supabase Auth user metadata.
+- Replaced payment, counterparty, invoice and API-key creation form modals with dedicated workspace pages while preserving the left navigation shell.
+- Kept destructive actions as confirmation flows instead of form modals.

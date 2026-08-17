@@ -1,10 +1,10 @@
-# FlowPay 1.3 — чеклист перед запуском
+# FlowPay 1.5 — чеклист перед запуском
 
 Кодовая часть, которую можно закрыть без твоего юрлица, домена и договоров с платёжными партнёрами, подготовлена. Перед закрытой бетой пройди пункты ниже.
 
 ## Обязательно перед private beta
 
-- [ ] Если база ещё на 1.1: выполнить `supabase/upgrade-v12.sql`, затем `supabase/upgrade-v13.sql`.
+- [ ] На существующей базе после `upgrade-v13.sql` обязательно выполнить `supabase/upgrade-v15.sql` для защищённого журнала принятия Privacy/Terms.
 - [ ] В Vercel задать `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`.
 - [ ] Задать `FLOWPAY_ADMIN_USER_IDS` для всех операторов `/admin`; email-based доступ не используется.
 - [ ] Задать `NEXT_PUBLIC_APP_URL` на production HTTPS-домен.
@@ -49,3 +49,15 @@
 - [ ] На Dashboard проверить 30-day forecast на аккаунте с платежами в одной и нескольких валютах.
 - [ ] В Settings проверить MFA/session/access activity без раскрытия секретов.
 
+
+
+## FlowPay 1.5 auth/workspace checks
+
+- [ ] На `/login` проверить desktop/mobile, recovery link, переход на `/register` и отсутствие старой склейки `На главнуюFLOWPAY`.
+- [ ] На `/register` прокрутить Privacy до конца: checkbox до этого момента должен быть disabled. Повторить для Terms.
+- [ ] После тестовой регистрации убедиться, что `public.legal_acceptances` содержит две server-created записи: Privacy `acknowledged` и Terms `accepted` с текущими версиями документов.
+- [ ] Проверить `/privacy` и `/terms`, печать/PDF и ссылки между документами.
+- [ ] До платного публичного запуска заполнить реальное юридическое имя оператора, адрес, privacy contact и governing law; затем отдать документы на профильную юрпроверку.
+- [ ] `+ Новый платёж`, `+ Контрагент`, `+ Счёт`, `+ API-ключ` должны открывать отдельную workspace-страницу, а не form-modal.
+- [ ] Edit платежа/контрагента/счёта должен открывать `/:id/edit` при сохранённой левой панели.
+- [ ] Подтверждения удаления/отзыва остаются confirmation flows.
