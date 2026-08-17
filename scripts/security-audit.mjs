@@ -18,7 +18,10 @@ const requireFile=file=>{if(!fs.existsSync(file))failures.push(`missing ${file}`
 for(const file of ['lib/http.ts','lib/security.ts','lib/rate-limit.ts','lib/server-log.ts','supabase/upgrade-v13.sql','.github/workflows/ci.yml','SECURITY.md']) requireFile(file)
 
 const next=read('next.config.ts')
-for(const token of ['Content-Security-Policy','Strict-Transport-Security','X-Content-Type-Options','X-Frame-Options','Referrer-Policy','Permissions-Policy','Cross-Origin-Opener-Policy','Cross-Origin-Resource-Policy']) if(!next.includes(token)) failures.push(`security header missing: ${token}`)
+for(const token of ['Strict-Transport-Security','X-Content-Type-Options','X-Frame-Options','Referrer-Policy','Permissions-Policy','Cross-Origin-Opener-Policy','Cross-Origin-Resource-Policy']) if(!next.includes(token)) failures.push(`security header missing: ${token}`)
+const middleware=read('middleware.ts')
+if(!middleware.includes('Content-Security-Policy')||!middleware.includes('nonce-${nonce}')||!middleware.includes("'strict-dynamic'")) failures.push('request-scoped nonce Content-Security-Policy is missing')
+if(middleware.includes("'unsafe-inline'") && /script-src[^\n]*unsafe-inline/.test(middleware)) failures.push('script-src permits unsafe-inline')
 if(!next.includes("poweredByHeader: false")) failures.push('X-Powered-By is not disabled')
 if(next.includes('productionBrowserSourceMaps: true')) failures.push('production browser source maps are enabled')
 
@@ -51,7 +54,7 @@ for(const fn of ['flowpay_upsert_payment','flowpay_upsert_counterparty','flowpay
     if(!window.includes("set search_path = ''")) failures.push(`${fn} search_path is not hardened`)
   }
 }
-if(!schema.includes('grant select (id,user_id,name,key_prefix,last_used_at,created_at,revoked_at) on public.api_keys to authenticated')) failures.push('API key hash column is still browser-readable')
+if(!schema.includes('grant select (id,user_id,name,key_prefix,scope,expires_at,last_used_at,created_at,revoked_at) on public.api_keys to authenticated')) failures.push('API key hash column is still browser-readable')
 if(!schema.includes('revoke insert, update on public.company_profiles from authenticated')) failures.push('company profile browser writes are not revoked')
 if(!schema.includes('revoke select on public.provider_rules from anon, authenticated')) failures.push('provider pricing table still has broad browser SELECT')
 if(!schema.includes('grant select (id,provider_code,display_name,from_country,to_country,currencies,active,source_updated_at)')) failures.push('provider browser access is not column-restricted')
@@ -70,11 +73,11 @@ for(const file of apiFiles){
     if(!text.includes('requestId(') && !text.includes('requestJson(') && !ends(file,'api/health/route.ts')) failures.push(`${display(file)} has no request ID`)
   }
 }
-for(const file of ['app/api/quote/route.ts','app/api/audit/route.ts','app/api/v1/quote/route.ts','app/api/keys/route.ts','app/api/admin/provider-rules/route.ts','app/api/onboarding/route.ts','app/api/profile/route.ts']) {
+for(const file of ['app/api/quote/route.ts','app/api/audit/route.ts','app/api/v1/quote/route.ts','app/api/keys/route.ts','app/api/admin/provider-rules/route.ts','app/api/onboarding/route.ts','app/api/profile/route.ts','app/api/register/route.ts']) {
   const text=read(file)
   if(!text.includes('readJsonBody')) failures.push(`${file} has no bounded JSON body reader`)
 }
-for(const file of ['app/api/quote/route.ts','app/api/audit/route.ts','app/api/v1/quote/route.ts','app/api/keys/route.ts','app/api/account/route.ts','app/api/admin/provider-rules/route.ts']) {
+for(const file of ['app/api/quote/route.ts','app/api/audit/route.ts','app/api/v1/quote/route.ts','app/api/keys/route.ts','app/api/account/route.ts','app/api/admin/provider-rules/route.ts','app/api/register/route.ts']) {
   if(!read(file).includes('checkRateLimit')) failures.push(`${file} has no rate limiting`)
 }
 

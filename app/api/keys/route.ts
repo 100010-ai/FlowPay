@@ -1,12 +1,15 @@
 import { z } from 'zod'
 import { logSystemEvent } from '@/lib/server-log'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { authenticatedUser } from '@/lib/server-auth'
+import { requireAal2 } from '@/lib/server-auth'
 import { checkRateLimit } from '@/lib/rate-limit'
-import { apiJson, bodyErrorResponse, readJsonBody, requestId } from '@/lib/http'
+import { apiJson, bodyErrorResponse, readJsonBody, requestId, trustedMutationOrigin } from '@/lib/http'
 import { safeErrorMessage } from '@/lib/security'
 
-const createSchema = z.object({ name: z.string().trim().min(1).max(80) })
+const createSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  ttlDays: z.union([z.literal(30), z.literal(60), z.literal(90)]).default(90),
+})
 const revokeSchema = z.object({ id: z.string().uuid() })
 
 async function sha256(value: string) {
@@ -21,27 +24,42 @@ function newSecret() {
   return `fp_live_${body}`
 }
 
+function authFailure(reqId: string, code: 'UNAUTHORIZED'|'MFA_REQUIRED') {
+  return apiJson({ error: code, requestId: reqId }, code === 'UNAUTHORIZED' ? 401 : 403, { 'X-Request-ID': reqId })
+}
+
 export async function POST(request: Request) {
   const reqId = requestId(request)
-  const user = await authenticatedUser(request)
-  if (!user) return apiJson({ error: 'UNAUTHORIZED', requestId: reqId }, 401, { 'X-Request-ID': reqId })
-  const rate = await checkRateLimit(request, 'api_key_create', 10, 3600, { subject: user.id })
+  if (!trustedMutationOrigin(request)) return apiJson({ error: 'CROSS_ORIGIN_DENIED', requestId: reqId }, 403, { 'X-Request-ID': reqId })
+  const gate = await requireAal2(request)
+  if (!gate.ok) return authFailure(reqId, gate.code)
+  const user = gate.auth.user
+  const rate = await checkRateLimit(request, 'api_key_create', 5, 3600, { subject: user.id })
   if (!rate.available) return apiJson({ error: 'SERVICE_UNAVAILABLE', requestId: reqId }, 503, { 'X-Request-ID': reqId })
   if (!rate.allowed) return apiJson({ error: 'RATE_LIMITED', requestId: reqId }, 429, { 'Retry-After': '3600', 'X-Request-ID': reqId })
 
   try {
     const parsed = createSchema.safeParse(await readJsonBody(request, 4_096))
-    if (!parsed.success) return apiJson({ error: 'INVALID_NAME', requestId: reqId }, 400, { 'X-Request-ID': reqId })
+    if (!parsed.success) return apiJson({ error: 'INVALID_KEY_REQUEST', requestId: reqId }, 400, { 'X-Request-ID': reqId })
     const admin = createAdminClient()
-    const { count, error: countError } = await admin.from('api_keys').select('id', { count: 'exact', head: true }).eq('user_id', user.id).is('revoked_at', null)
+    const now = new Date()
+    const { count, error: countError } = await admin.from('api_keys').select('id', { count: 'exact', head: true }).eq('user_id', user.id).is('revoked_at', null).gt('expires_at', now.toISOString())
     if (countError) throw countError
-    if ((count || 0) >= 20) return apiJson({ error: 'KEY_LIMIT_REACHED', requestId: reqId }, 409, { 'X-Request-ID': reqId })
+    if ((count || 0) >= 10) return apiJson({ error: 'KEY_LIMIT_REACHED', requestId: reqId }, 409, { 'X-Request-ID': reqId })
 
     const secret = newSecret()
     const hash = await sha256(secret)
-    const { data, error } = await admin.from('api_keys').insert({ user_id: user.id, name: parsed.data.name, key_prefix: secret.slice(0, 17), key_hash: hash }).select('id,name,key_prefix,created_at').single()
+    const expiresAt = new Date(now.getTime() + parsed.data.ttlDays * 86_400_000).toISOString()
+    const { data, error } = await admin.from('api_keys').insert({
+      user_id: user.id,
+      name: parsed.data.name,
+      key_prefix: secret.slice(0, 17),
+      key_hash: hash,
+      scope: 'quote:read',
+      expires_at: expiresAt,
+    }).select('id,name,key_prefix,scope,expires_at,created_at').single()
     if (error) throw error
-    await logSystemEvent({ level: 'info', source: 'api_keys', code: 'API_KEY_CREATED', userId: user.id, metadata: { requestId: reqId, keyId: data.id } })
+    await logSystemEvent({ level: 'info', source: 'api_keys', code: 'API_KEY_CREATED', userId: user.id, metadata: { requestId: reqId, keyId: data.id, ttlDays: parsed.data.ttlDays } })
     return apiJson({ key: data, secret, requestId: reqId }, 200, { 'X-Request-ID': reqId })
   } catch (error) {
     const bodyError = bodyErrorResponse(error, reqId)
@@ -53,9 +71,11 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   const reqId = requestId(request)
-  const user = await authenticatedUser(request)
-  if (!user) return apiJson({ error: 'UNAUTHORIZED', requestId: reqId }, 401, { 'X-Request-ID': reqId })
-  const rate = await checkRateLimit(request, 'api_key_revoke', 30, 3600, { subject: user.id })
+  if (!trustedMutationOrigin(request)) return apiJson({ error: 'CROSS_ORIGIN_DENIED', requestId: reqId }, 403, { 'X-Request-ID': reqId })
+  const gate = await requireAal2(request)
+  if (!gate.ok) return authFailure(reqId, gate.code)
+  const user = gate.auth.user
+  const rate = await checkRateLimit(request, 'api_key_revoke', 20, 3600, { subject: user.id })
   if (!rate.available) return apiJson({ error: 'SERVICE_UNAVAILABLE', requestId: reqId }, 503, { 'X-Request-ID': reqId })
   if (!rate.allowed) return apiJson({ error: 'RATE_LIMITED', requestId: reqId }, 429, { 'Retry-After': '3600', 'X-Request-ID': reqId })
 

@@ -1,17 +1,25 @@
-# FlowPay 1.5
+# FlowPay 1.6
 
-FlowPay — B2B-сервис для сравнения маршрутов международных платежей, управления контрагентами, счетами, платежами, отчётами и API-доступом. Версия 1.5 развивает product UX: отдельная регистрация с legal review, серверный журнал принятия документов и полноценные workspace-страницы вместо форм в модальных окнах.
+FlowPay — B2B-сервис для сравнения маршрутов международных платежей, управления контрагентами, счетами, платежами, отчётами и API-доступом. Версия 1.6 — security hardening release: mandatory MFA/AAL2, database-enforced least privilege, short-lived API credentials, strict browser policy и hardened registration/CI.
+
+## Что нового в 1.6
+
+- Workspace financial data доступен только после TOTP step-up до AAL2.
+- Второй фактор проверяется не только UI: `upgrade-v16.sql` добавляет restrictive AAL2 policies, FORCE RLS и AAL2 проверки внутри mutation RPC.
+- Security Center поддерживает основной и резервные TOTP-факторы; `/mfa` позволяет выбрать рабочий authenticator.
+- Password reset и удаление MFA factor завершают активные sessions глобально.
+- `/register` больше не вызывает Supabase signup напрямую из браузера: same-origin server endpoint ограничивает body/rate и записывает server-trusted legal receipts.
+- API keys получили `quote:read`, 30/60/90-day lifetime, active-key cap и обязательный AAL2 lifecycle.
+- HTML использует request-scoped nonce CSP; production `script-src` без `unsafe-inline`; расширены security headers и отключены browser source maps.
+- CI hardening: Node 24.18.1, pinned GitHub Action SHA, CodeQL, no automatic semver-major Dependabot jumps.
+- Добавлен отдельный `SECURITY_HARDENING.md` и `npm run audit:v16`.
 
 ## Что нового в 1.5
 
-- Полностью переработана страница входа: чистая двухколоночная композиция, trust/security-панель, улучшенный recovery UX и отдельная регистрация.
-- Регистрация вынесена на `/register` и состоит из Privacy Policy → Terms of Service → Account. Подтверждение каждого юридического документа становится доступно только после прокрутки до конца.
-- `/privacy` и `/terms` содержат версионируемые документы, содержание и печать/PDF. До платного запуска необходимо заполнить реальные реквизиты оператора и пройти юрпроверку под целевые страны.
-- `supabase/upgrade-v15.sql` добавляет защищённый `legal_acceptances`: браузер может читать собственную квитанцию, но не может создавать/изменять/удалять доказательства принятия. Серверное время берётся из `auth.users.created_at`.
-- Создание/редактирование платежей, контрагентов и счетов, а также создание API-ключа перенесены на отдельные `(workspace)` routes. Левая панель FlowPay остаётся на месте.
-- Модальные/confirm flows оставлены только для опасных подтверждений вроде удаления/отзыва.
-- Signed-out CTA на лендинге ведут в `/register`, а явная кнопка входа остаётся `/login`.
-- Добавлен `npm run audit:v15`.
+- Полностью переработана страница входа и отдельная `/register`.
+- Privacy → Terms → Account с обязательным review документов.
+- Создание/редактирование платежей, контрагентов и счетов вынесено из form-modals на отдельные workspace pages.
+- `upgrade-v15.sql` добавляет legal acceptance ledger.
 
 ## Что нового в 1.4
 
@@ -23,7 +31,7 @@ FlowPay — B2B-сервис для сравнения маршрутов меж
 - Security Center показывает способ входа, состояние MFA, срок текущей сессии и последние изменения API-доступа/профиля из audit log.
 - Добавлен `npm run audit:v14`, который защищает новые продуктовые функции от регрессий.
 
-FlowPay 1.4 не требовал новой SQL-миграции. Для FlowPay 1.5 на существующей базе обязательно один раз выполнить `supabase/upgrade-v15.sql`, чтобы включить серверный legal-acceptance ledger.
+FlowPay 1.6 требует `supabase/upgrade-v16.sql` на существующей v1.5 базе; на более старой базе сначала применяются предыдущие migrations в порядке ниже.
 
 ## Что изменилось в 1.3
 
@@ -66,39 +74,47 @@ FlowPay 1.4 не требовал новой SQL-миграции. Для FlowPa
 supabase/schema.sql
 ```
 
-### Если база уже на FlowPay 1.3/1.4
+### База уже на FlowPay 1.5
+
+```text
+supabase/upgrade-v16.sql
+```
+
+### База на FlowPay 1.3/1.4
 
 ```text
 supabase/upgrade-v15.sql
+supabase/upgrade-v16.sql
 ```
 
-### Если база уже на FlowPay 1.2.x
-
-Выполни по порядку:
+### База на FlowPay 1.2.x
 
 ```text
 supabase/upgrade-v13.sql
 supabase/upgrade-v15.sql
+supabase/upgrade-v16.sql
 ```
 
-### Если база на 1.1.x
+### База на FlowPay 1.1.x
 
 ```text
 supabase/upgrade-v12.sql
 supabase/upgrade-v13.sql
 supabase/upgrade-v15.sql
+supabase/upgrade-v16.sql
 ```
 
-### Если база на 1.0.x
+### База на FlowPay 1.0.x
 
 ```text
 supabase/upgrade-v11.sql
 supabase/upgrade-v12.sql
 supabase/upgrade-v13.sql
 supabase/upgrade-v15.sql
+supabase/upgrade-v16.sql
 ```
 
-### Если база ещё v0.5.x
+### База ещё v0.5.x
 
 ```text
 supabase/upgrade-v10.sql
@@ -106,8 +122,10 @@ supabase/upgrade-v11.sql
 supabase/upgrade-v12.sql
 supabase/upgrade-v13.sql
 supabase/upgrade-v15.sql
-supabase/upgrade-v15.sql
+supabase/upgrade-v16.sql
 ```
+
+**Важно:** для существующей production-базы `upgrade-v16.sql` нужно применить до открытия новой регистрации v1.6, потому что server registration пишет новый trusted source `registration_server`.
 
 Миграции не добавляют выдуманные тарифы платёжных провайдеров. Реальные правила добавляются оператором через `/admin`.
 
@@ -199,6 +217,8 @@ curl -X POST https://flowpay-network.vercel.app/api/v1/quote \
 - `LAUNCH_CHECKLIST.md` — чеклист перед закрытой бетой.
 - `SCALING_RU.md` — что уже оптимизировано и когда понадобится следующий инфраструктурный уровень.
 - `SECURITY.md` — правила безопасности репозитория и релиза.
+- `SECURITY_HARDENING.md` — что enforced кодом/БД и какие production security settings нужно проверить вручную.
+- `SECURITY_DEPLOYMENT.md` — инфраструктурный checklist Supabase/Vercel/GitHub.
 - `LEGAL_REVIEW_REQUIRED.md` — что должен проверить юрист до коммерческого запуска.
 
 ## Важная граница продукта

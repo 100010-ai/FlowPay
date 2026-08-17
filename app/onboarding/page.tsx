@@ -79,7 +79,7 @@ export default function OnboardingPage(){
       if(!token){router.replace('/login');return}
       const response=await fetch('/api/onboarding',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({name:name.trim(),country,currency,timezone})})
       if(!response.ok)throw new Error('SAVE_FAILED')
-      router.replace('/dashboard');router.refresh()
+      router.replace('/settings/security?required=1&next=%2Fdashboard');router.refresh()
     }catch{setError(c.error)}finally{setSaving(false)}
   }
 

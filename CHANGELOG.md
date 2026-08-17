@@ -1,5 +1,18 @@
 # FlowPay changelog
 
+## 1.6.0
+
+- Added mandatory TOTP/AAL2 step-up before workspace financial data and sensitive mutations.
+- Added Postgres restrictive AAL2 RLS gates, FORCE RLS and AAL2 checks inside financial SECURITY DEFINER RPCs.
+- Added multiple TOTP factors with backup-authenticator selection and global session invalidation after MFA removal.
+- Password recovery now globally signs out active sessions after credential rotation.
+- Replaced direct browser Supabase signup with same-origin, rate-limited `/api/register`; legal receipts are minted server-side and no longer trust caller-controlled Auth metadata.
+- Hardened API credentials with `quote:read` scope, 30/60/90-day expiry, active-key cap and expiry enforcement.
+- Applied request-scoped nonce CSP across HTML, removed `unsafe-inline` from production `script-src`, disabled production source maps and expanded security headers.
+- Reduced service-role usage on normal user flows and enforced AAL2 before authenticated quote/audit persistence.
+- Pinned Node 24.18.1 and CI actions to exact commit SHAs, added CodeQL and blocked automated semver-major dependency jumps.
+- Added `supabase/upgrade-v16.sql`, `SECURITY_HARDENING.md` and `npm run audit:v16`.
+
 ## 1.4.0
 
 - Reworked modal and command-palette overlays to remove the heavy blurred backdrop while preserving focus and accessibility.

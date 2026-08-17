@@ -43,12 +43,12 @@ export async function POST(request: Request) {
     const keyHash = await sha256(raw)
     const { data: key, error: keyError } = await admin
       .from('api_keys')
-      .select('id,user_id,revoked_at,last_used_at')
+      .select('id,user_id,scope,expires_at,revoked_at,last_used_at')
       .eq('key_hash', keyHash)
       .maybeSingle()
 
     if (keyError) throw keyError
-    if (!key || key.revoked_at) return apiJson({ error: 'INVALID_API_KEY', requestId: reqId }, 401, { 'X-Request-ID': reqId })
+    if (!key || key.revoked_at || key.scope !== 'quote:read' || new Date(key.expires_at).getTime() <= Date.now()) return apiJson({ error: 'INVALID_API_KEY', requestId: reqId }, 401, { 'X-Request-ID': reqId })
 
     userId = key.user_id
     const keyRate = await checkRateLimit(request, 'api_quote_key', 120, 60, { subject: key.id })

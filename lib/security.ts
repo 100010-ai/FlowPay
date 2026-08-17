@@ -3,6 +3,8 @@ const secretPatterns = [
   /fp_live_[a-f0-9]{24,}/gi,
   /sb_(?:secret|publishable)_[A-Za-z0-9._-]+/gi,
   /eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g,
+  /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi,
+  /\b[A-Z]{2}\d{2}[A-Z0-9]{10,30}\b/gi,
 ]
 
 const sensitiveKeys = new Set([

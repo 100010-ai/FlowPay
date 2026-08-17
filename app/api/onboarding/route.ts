@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { authenticatedClient } from '@/lib/server-auth'
 import { isSupportedCountry, isSupportedCurrency } from '@/lib/countries'
 import { checkRateLimit } from '@/lib/rate-limit'
-import { apiJson, bodyErrorResponse, readJsonBody, requestId } from '@/lib/http'
+import { apiJson, bodyErrorResponse, readJsonBody, requestId, trustedMutationOrigin } from '@/lib/http'
 
 const schema = z.object({
   name: z.string().trim().min(2).max(160),
@@ -13,6 +13,7 @@ const schema = z.object({
 
 export async function POST(request: Request) {
   const reqId = requestId(request)
+  if (!trustedMutationOrigin(request)) return apiJson({ error: 'CROSS_ORIGIN_DENIED', requestId: reqId }, 403, { 'X-Request-ID': reqId })
   const auth = await authenticatedClient(request)
   if (!auth) return apiJson({ error: 'UNAUTHORIZED', requestId: reqId }, 401, { 'X-Request-ID': reqId })
   const rate = await checkRateLimit(request, 'onboarding_save', 20, 3600, { subject: auth.user.id })

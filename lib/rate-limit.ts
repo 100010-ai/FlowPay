@@ -17,10 +17,11 @@ const localCounters = new Map<string, LocalCounter>()
 const LOCAL_COUNTER_MAX = 5_000
 
 function networkIdentity(request: Request, includeUserAgent = false) {
-  const vercel = request.headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim()
-  const real = request.headers.get('x-real-ip')?.trim()
-  const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
-  const ip = vercel || real || forwarded || 'unknown'
+  // Vercel overwrites x-forwarded-for at the edge, so it is the authoritative
+  // public client address in production and cannot be replaced by a caller.
+  const forwarded = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim().slice(0, 80)
+  const real = process.env.NODE_ENV === 'production' ? '' : request.headers.get('x-real-ip')?.trim().slice(0, 80)
+  const ip = forwarded || real || 'unknown'
   if (!includeUserAgent) return ip
   const ua = (request.headers.get('user-agent') || 'unknown').slice(0, 160)
   return `${ip}|${ua}`

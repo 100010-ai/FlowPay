@@ -7,7 +7,7 @@ for(const file of ['app/register/page.tsx','components/RegisterPage.tsx','lib/le
 const auth=read('components/AuthPage.tsx');const register=read('components/RegisterPage.tsx');const legal=read('lib/legal.ts');const legalSql=read('supabase/upgrade-v15.sql');const workspaceProvider=read('components/workspace/WorkspaceProvider.tsx');const payments=read('app/(workspace)/payments/page.tsx');const counterparties=read('app/(workspace)/counterparties/page.tsx');const invoices=read('app/(workspace)/invoices/page.tsx');const developer=read('app/(workspace)/developer/page.tsx')
 expect(auth.includes('href="/register"'),'login page does not link to separate registration')
 expect(register.includes('scrollTop+el.clientHeight>=el.scrollHeight-20'),'registration does not require reading to the end')
-expect(register.includes('privacy_acknowledged:true')&&register.includes('terms_accepted:true'),'registration does not send explicit legal acknowledgement flags')
+expect((register.includes('privacy_acknowledged:true')&&register.includes('terms_accepted:true'))||(register.includes('privacyAcknowledged:true')&&register.includes('termsAccepted:true')),'registration does not send explicit legal acknowledgement flags')
 expect(legalSql.includes('public.legal_acceptances')&&legalSql.includes('accepted_at timestamptz not null'),'server-side legal acceptance ledger is missing')
 expect(legalSql.includes('new.created_at')&&legalSql.includes('after insert on auth.users'),'legal acceptance time is not derived server-side at signup')
 expect(legalSql.includes('revoke all on public.legal_acceptances from anon, authenticated'),'legal acceptance ledger is browser-mutable')

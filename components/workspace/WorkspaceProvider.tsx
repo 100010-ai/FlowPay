@@ -19,6 +19,8 @@ type WorkspaceState = {
   apiUsage: ApiUsageDaily[]
   providerRules: ProviderRuleSummary[]
   auditLogs: WorkspaceAuditLog[]
+  mfaCurrentLevel: 'aal1'|'aal2'|null
+  mfaNextLevel: 'aal1'|'aal2'|null
   loading: boolean
   refreshing: boolean
   error: string | null
@@ -49,7 +51,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const loadedLimit = useRef<Partial<Record<JobName, number>>>({})
   const mounted = useRef(false)
   const [state, setState] = useState<Omit<WorkspaceState, 'refresh'>>({
-    user: null, profile: null, payments: [], counterparties: [], calculations: [], audits: [], apiKeys: [], invoices: [], apiLogs: [], apiUsage: [], providerRules: [], auditLogs: [], loading: true, refreshing: false, error: null,
+    user: null, profile: null, payments: [], counterparties: [], calculations: [], audits: [], apiKeys: [], invoices: [], apiLogs: [], apiUsage: [], providerRules: [], auditLogs: [], mfaCurrentLevel: null, mfaNextLevel: null, loading: true, refreshing: false, error: null,
   })
 
   const load = useCallback(async (initial = false, force = false) => {
@@ -70,6 +72,31 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         return
       }
       const uid = user.id
+      const { data: aal, error: aalError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+      if (aalError) throw aalError
+      const currentLevel = aal.currentLevel
+      const nextLevel = aal.nextLevel
+      const securitySetup = pathname === '/settings/security'
+      if (currentLevel !== 'aal2') {
+        setState(s => ({
+          ...s,
+          user,
+          profile: null,
+          payments: [], counterparties: [], calculations: [], audits: [], apiKeys: [], invoices: [], apiLogs: [], apiUsage: [], providerRules: [], auditLogs: [],
+          mfaCurrentLevel: currentLevel,
+          mfaNextLevel: nextLevel,
+          loading: false,
+          refreshing: false,
+          error: null,
+        }))
+        if (!securitySetup) {
+          const nextPath = pathname && pathname.startsWith('/') && !pathname.startsWith('//') ? pathname : '/dashboard'
+          router.replace(nextLevel === 'aal2'
+            ? `/mfa?next=${encodeURIComponent(nextPath)}`
+            : `/settings/security?required=1&next=${encodeURIComponent(nextPath)}`)
+        }
+        return
+      }
       const inSection = (section: string) => pathname === section || pathname.startsWith(`${section}/`)
       const inPayments = inSection('/payments')
       const inCounterparties = inSection('/counterparties')
@@ -96,7 +123,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       if (staleWithLimit('auditLogs', auditLogLimit, 30_000)) jobs.push({ name: 'auditLogs', promise: supabase.from('workspace_audit_log').select('id,user_id,entity_type,entity_id,action,created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(auditLogLimit) })
 
       if (pathname === '/analytics' && stale('audits', 30_000)) jobs.push({ name: 'audits', promise: supabase.from('audit_requests').select('id,user_id,email,from_country,to_country,amount,currency,recipient_currency,actual_fee,best_provider_code,estimated_best_fee,potential_saving,status,created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(300) })
-      if ((inDeveloper || inSettings) && stale('apiKeys', 30_000)) jobs.push({ name: 'apiKeys', promise: supabase.from('api_keys').select('id,user_id,name,key_prefix,last_used_at,created_at,revoked_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(100) })
+      if ((inDeveloper || inSettings) && stale('apiKeys', 30_000)) jobs.push({ name: 'apiKeys', promise: supabase.from('api_keys').select('id,user_id,name,key_prefix,scope,expires_at,last_used_at,created_at,revoked_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(100) })
       if ((['/dashboard','/reports'].includes(pathname) || inCounterparties || inInvoices || inPayments) && stale('invoices', 20_000)) jobs.push({ name: 'invoices', promise: supabase.from('invoices').select('id,user_id,counterparty_id,invoice_number,supplier_name,issue_date,due_date,amount,currency,status,reference,notes,payment_draft_id,created_at,updated_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(500) })
       if ((inDeveloper || pathname === '/reports') && stale('apiLogs', 20_000)) jobs.push({ name: 'apiLogs', promise: supabase.from('api_request_logs').select('id,user_id,endpoint,status_code,duration_ms,request_id,created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(200) })
       if ((inDeveloper || pathname === '/reports') && stale('apiUsage', 30_000)) jobs.push({ name: 'apiUsage', promise: supabase.from('api_usage_daily').select('user_id,endpoint,usage_date,request_count,success_count,error_count,total_duration_ms,max_duration_ms,updated_at').eq('user_id', uid).order('usage_date', { ascending: false }).limit(365) })
@@ -130,6 +157,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         apiUsage: resultMap.has('apiUsage') ? ((get<Record<string, unknown>[]>('apiUsage') || []).map(r => numberize(r, ['request_count','success_count','error_count','total_duration_ms','max_duration_ms'])) as ApiUsageDaily[]) : s.apiUsage,
         providerRules: resultMap.has('providerRules') ? ((get<ProviderRuleSummary[]>('providerRules') || []) as ProviderRuleSummary[]) : s.providerRules,
         auditLogs: resultMap.has('auditLogs') ? ((get<WorkspaceAuditLog[]>('auditLogs') || []) as WorkspaceAuditLog[]) : s.auditLogs,
+        mfaCurrentLevel: currentLevel,
+        mfaNextLevel: nextLevel,
         loading: false,
         refreshing: false,
         error: null,
@@ -146,6 +175,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       const { data } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT' || !session?.user) {
         authCache.current = { user: null, validatedAt: 0 }
+        loadedAt.current = {}; loadedLimit.current = {}
+        setState({ user:null, profile:null, payments:[], counterparties:[], calculations:[], audits:[], apiKeys:[], invoices:[], apiLogs:[], apiUsage:[], providerRules:[], auditLogs:[], mfaCurrentLevel:null, mfaNextLevel:null, loading:false, refreshing:false, error:null })
         if (event === 'SIGNED_OUT') router.replace('/login')
         return
       }

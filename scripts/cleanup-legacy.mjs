@@ -19,6 +19,9 @@ const legacyPaths = [
   'components/ui/Reveal.tsx',
   'components/workspace/WorkspaceApp.tsx',
   'lib/i18n.ts',
+  'components/workspace/PaymentDialog.tsx',
+  'components/workspace/CounterpartyDialog.tsx',
+  'components/workspace/InvoiceDialog.tsx',
 ]
 
 for (const path of legacyPaths) {

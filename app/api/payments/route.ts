@@ -1,9 +1,8 @@
 import { z } from 'zod'
-import { authenticatedClient } from '@/lib/server-auth'
+import { requireAal2 } from '@/lib/server-auth'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { trustedMutationOrigin, readJsonBody, RequestBodyError, requestJson } from '@/lib/http'
 import { isSupportedCountry, isSupportedCurrency } from '@/lib/countries'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { getEligibleProviderRules } from '@/lib/provider-rules'
 import { getReferenceFx } from '@/lib/fx'
 import { buildRoutes } from '@/lib/routing'
@@ -50,18 +49,19 @@ function sameHistoricalQuote(row:ExistingRouteRow,input:z.infer<typeof schema>,r
 
 export async function POST(request:Request){
   if(!trustedMutationOrigin(request))return requestJson(request, {error:'CROSS_ORIGIN_DENIED'},{status:403})
-  const auth=await authenticatedClient(request);if(!auth)return requestJson(request, {error:'UNAUTHORIZED'},{status:401})
-  const rate=await checkRateLimit(request,'payment_write',40,60,{ subject: auth.user.id })
+  const gate=await requireAal2(request);if(!gate.ok)return requestJson(request,{error:gate.code},{status:gate.code==='UNAUTHORIZED'?401:403})
+  const auth=gate.auth
+  const rate=await checkRateLimit(request,'payment_write',30,60,{ subject: auth.user.id })
   if(!rate.available)return requestJson(request, {error:'SERVICE_UNAVAILABLE'},{status:503})
   if(!rate.allowed)return requestJson(request, {error:'RATE_LIMITED'},{status:429})
   try{
     const parsed=schema.safeParse(await readJsonBody(request,32_768))
     if(!parsed.success)return requestJson(request, {error:parsed.error.issues[0]?.message||'INVALID_PAYMENT'},{status:400})
-    const input=parsed.data;const admin=createAdminClient();let selected:QuoteRoute|null=null
+    const input=parsed.data;let selected:QuoteRoute|null=null
 
     if(input.selectedRouteId){
       if(input.paymentId){
-        const {data:existing}=await admin.from('payment_drafts').select('amount,currency,route_from_country,route_to_country,recipient_currency,route_snapshot').eq('id',input.paymentId).eq('user_id',auth.user.id).maybeSingle()
+        const {data:existing}=await auth.client.from('payment_drafts').select('amount,currency,route_from_country,route_to_country,recipient_currency,route_snapshot').eq('id',input.paymentId).eq('user_id',auth.user.id).maybeSingle()
         if(existing&&sameHistoricalQuote(existing as ExistingRouteRow,input,input.selectedRouteId))selected=(existing as ExistingRouteRow).route_snapshot
       }
       if(!selected){

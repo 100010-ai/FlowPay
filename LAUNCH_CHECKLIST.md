@@ -1,4 +1,4 @@
-# FlowPay 1.5 — чеклист перед запуском
+# FlowPay 1.6 — чеклист перед запуском
 
 Кодовая часть, которую можно закрыть без твоего юрлица, домена и договоров с платёжными партнёрами, подготовлена. Перед закрытой бетой пройди пункты ниже.
 
@@ -61,3 +61,19 @@
 - [ ] `+ Новый платёж`, `+ Контрагент`, `+ Счёт`, `+ API-ключ` должны открывать отдельную workspace-страницу, а не form-modal.
 - [ ] Edit платежа/контрагента/счёта должен открывать `/:id/edit` при сохранённой левой панели.
 - [ ] Подтверждения удаления/отзыва остаются confirmation flows.
+
+
+## FlowPay 1.6 security checks
+
+- [ ] `supabase/upgrade-v16.sql` применён после v1.5.
+- [ ] Новый signup идёт через `/api/register`; прямой Auth signup не может завершить onboarding без trusted legal receipt.
+- [ ] Новый пользователь после onboarding обязан настроить TOTP.
+- [ ] AAL1 session не читает payments/counterparties/invoices/API-key metadata.
+- [ ] AAL2 session читает только собственные workspace rows.
+- [ ] Настроен резервный TOTP factor и проверен выбор factor на `/mfa`.
+- [ ] API key создаётся только с AAL2, имеет `quote:read` и expiry.
+- [ ] Expired/revoked key получает 401.
+- [ ] Password reset завершает старые sessions.
+- [ ] Production HTML CSP содержит request nonce и не содержит `unsafe-inline` в `script-src`.
+- [ ] Vercel/Supabase/GitHub manual hardening из `SECURITY_HARDENING.md` пройден.
+- [ ] CI + CodeQL required перед merge в `main`.

@@ -163,7 +163,7 @@ export type AuditRequest = {
   created_at: string
 }
 
-export type ApiKeyRow = { id:string; user_id:string; name:string; key_prefix:string; last_used_at:string|null; created_at:string; revoked_at:string|null }
+export type ApiKeyRow = { id:string; user_id:string; name:string; key_prefix:string; scope:'quote:read'; expires_at:string; last_used_at:string|null; created_at:string; revoked_at:string|null }
 export type WorkspaceInvitation = { id:string; owner_user_id:string; email:string; role:'admin'|'finance_manager'|'analyst'|'viewer'; status:'pending'|'accepted'|'cancelled'; created_at:string; accepted_at:string|null }
 export type ProviderRuleSummary = { id:string; provider_code:string; display_name:string|null; from_country:string; to_country:string; currencies:string[]; active:boolean; source_updated_at:string|null }
 

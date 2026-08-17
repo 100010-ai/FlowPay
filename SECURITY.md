@@ -1,26 +1,37 @@
 # Безопасность FlowPay
 
-FlowPay работает с платёжными метаданными, поэтому репозиторий и production-окружение нужно считать security-sensitive.
+FlowPay работает с финансовыми и банковскими метаданными, поэтому репозиторий, Auth, database и deployment-аккаунты считаются security-sensitive.
 
 ## Сообщение об уязвимости
 
-Не публикуй уязвимость, которая может раскрыть пользовательские, банковские, авторизационные или API-данные, в открытом GitHub Issue. Перед запуском настрой отдельный `security@` на своём домене и GitHub Private Vulnerability Reporting.
+Не публикуй уязвимость, которая может раскрыть пользовательские, банковские, авторизационные или API-данные, в открытом GitHub Issue. Перед публичным запуском настрой Private Vulnerability Reporting и отдельный security contact на собственном домене.
 
-## Базовая защита в v1.3
+## Основные гарантии FlowPay 1.6
 
-- `SUPABASE_SECRET_KEY` используется только на сервере и не имеет `NEXT_PUBLIC_` префикса.
-- Пользовательские таблицы защищены RLS.
-- Прямые browser INSERT/UPDATE/DELETE для финансовых сущностей отключены; критичные изменения идут через валидируемые RPC/API.
-- API-ключ хранится как SHA-256 hash; полный секрет показывается только при создании, а hash не доступен браузеру.
-- Чувствительные API имеют rate limit, ограничение размера body и request ID.
-- CSP, HSTS, anti-framing, MIME-sniffing и Permissions-Policy задаются приложением.
-- Статусы платежей и счетов меняются транзакционно с проверкой допустимого перехода.
-- Серверные логи очищаются от токенов, секретов и банковских реквизитов.
-- У operational-логов и rate-limit записей есть retention/prune helper.
+- Парольный AAL1-вход не открывает workspace financial data.
+- TOTP/AAL2 проверяется в UI, server API и Postgres RLS/RPC.
+- Чувствительные пользовательские таблицы используют ownership RLS + restrictive AAL2 gate + FORCE RLS.
+- Прямые browser writes к финансовым сущностям отозваны; mutations идут через валидируемые RPC/API.
+- Admin/sensitive mutations требуют AAL2.
+- API-key secret показывается один раз; хранится hash, scope минимален, ключи истекают автоматически.
+- Регистрация проходит через same-origin rate-limited server endpoint; legal receipts не доверяют caller-controlled `user_metadata`.
+- Password reset и MFA removal завершают активные сессии.
+- HTML использует request-scoped nonce CSP; production script policy не разрешает `unsafe-inline`.
+- HSTS, anti-framing, MIME-sniffing protection, restrictive permissions/referrer/cross-origin policies включены приложением.
+- Body limits, request IDs, fail-closed rate limiting и redacted server logging применяются на API.
+- CI actions pinned к commit SHA; CodeQL включён; automatic semver-major dependency jumps заблокированы.
+
+## Важные ограничения
+
+- `style-src 'unsafe-inline'` пока нужен UI/Recharts и не считается устранённым.
+- Инфраструктурные настройки Supabase/Vercel/GitHub нужно проверить отдельно.
+- Security hardening не заменяет независимый pentest и incident-response процесс.
+
+Полный список: `SECURITY_HARDENING.md` и `SECURITY_DEPLOYMENT.md`.
 
 ## Проверка релиза
 
-```bash
+```powershell
 npm run audit
 npm run typecheck
 npm run build

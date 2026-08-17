@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     const quoteId = crypto.randomUUID()
     const saving = estimatedSaving(routes)
 
-    if (auth && routes[0]) {
+    if (auth?.assuranceLevel === 'aal2' && routes[0]) {
       const best = routes[0]
       const { error: persistError } = await createAdminClient().from('calculations').insert({
         user_id: auth.user.id,

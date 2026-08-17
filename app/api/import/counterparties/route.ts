@@ -1,7 +1,6 @@
 import { z } from 'zod'
-import { authenticatedUser } from '@/lib/server-auth'
+import { requireAal2 } from '@/lib/server-auth'
 import { checkRateLimit } from '@/lib/rate-limit'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { isSupportedCountry, isSupportedCurrency } from '@/lib/countries'
 import { readJsonBody, RequestBodyError, trustedMutationOrigin, requestJson } from '@/lib/http'
 
@@ -22,25 +21,21 @@ const row=z.object({
 const body=z.object({rows:z.array(row).min(1).max(500)})
 
 export async function POST(request:Request){
-  if(!trustedMutationOrigin(request))return requestJson(request, {error:'CROSS_ORIGIN_DENIED'},{status:403})
-  const user=await authenticatedUser(request)
-  if(!user)return requestJson(request, {error:'UNAUTHORIZED'},{status:401})
-  const rate=await checkRateLimit(request,'import_counterparties',4,300,{ subject: user.id })
-  if(!rate.available)return requestJson(request, {error:'SERVICE_UNAVAILABLE'},{status:503})
-  if(!rate.allowed)return requestJson(request, {error:'RATE_LIMITED'},{status:429})
+  if(!trustedMutationOrigin(request))return requestJson(request,{error:'CROSS_ORIGIN_DENIED'},{status:403})
+  const gate=await requireAal2(request)
+  if(!gate.ok)return requestJson(request,{error:gate.code},{status:gate.code==='UNAUTHORIZED'?401:403})
+  const auth=gate.auth
+  const rate=await checkRateLimit(request,'import_counterparties',4,300,{subject:auth.user.id})
+  if(!rate.available)return requestJson(request,{error:'SERVICE_UNAVAILABLE'},{status:503})
+  if(!rate.allowed)return requestJson(request,{error:'RATE_LIMITED'},{status:429})
   try{
     const parsed=body.safeParse(await readJsonBody(request,1_500_000))
-    if(!parsed.success)return requestJson(request, {error:'INVALID_IMPORT'},{status:400})
-    const rows=parsed.data.rows.map(item=>({
-      user_id:user.id,name:item.name,country:item.country,currency:item.currency,bank_country:item.bank_country,
-      account_number:item.account_number,bic:item.bic,email:item.email,bank_name:item.bank_name,
-      account_holder:item.account_holder||item.name,tax_id:item.tax_id,verification_status:'unverified',total_sent:0,
-    }))
-    const admin=createAdminClient();const {error}=await admin.from('counterparties').insert(rows)
-    if(error)return requestJson(request, {error:'IMPORT_FAILED'},{status:400})
-    return requestJson(request, {ok:true,imported:rows.length})
+    if(!parsed.success)return requestJson(request,{error:'INVALID_IMPORT'},{status:400})
+    const {data,error}=await auth.client.rpc('flowpay_import_counterparties',{p_rows:parsed.data.rows})
+    if(error)return requestJson(request,{error:'IMPORT_FAILED'},{status:400})
+    return requestJson(request,{ok:true,imported:Number(data||0)})
   }catch(error){
-    if(error instanceof RequestBodyError)return requestJson(request, {error:error.code},{status:error.status})
-    return requestJson(request, {error:'IMPORT_FAILED'},{status:500})
+    if(error instanceof RequestBodyError)return requestJson(request,{error:error.code},{status:error.status})
+    return requestJson(request,{error:'IMPORT_FAILED'},{status:500})
   }
 }

@@ -1,10 +1,10 @@
 import { z } from 'zod'
-import { authenticatedUser } from '@/lib/server-auth'
+import { requireAal2 } from '@/lib/server-auth'
 import { isFlowPayAdmin } from '@/lib/admin-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isSupportedCountry, isSupportedCurrency } from '@/lib/countries'
 import { checkRateLimit } from '@/lib/rate-limit'
-import { apiJson, bodyErrorResponse, readJsonBody, requestId } from '@/lib/http'
+import { apiJson, bodyErrorResponse, readJsonBody, requestId, trustedMutationOrigin } from '@/lib/http'
 import { invalidateProviderRuleCache } from '@/lib/provider-rules'
 import { logSystemEvent } from '@/lib/server-log'
 import { safeErrorMessage } from '@/lib/security'
@@ -36,10 +36,12 @@ const ruleSelect = 'id,provider_code,display_name,from_country,to_country,curren
 
 async function guard(request: Request, action: string) {
   const reqId = requestId(request)
-  const user = await authenticatedUser(request)
-  if (!user) return { error: apiJson({ error: 'UNAUTHORIZED', requestId: reqId }, 401, { 'X-Request-ID': reqId }), reqId }
+  if (!trustedMutationOrigin(request)) return { error: apiJson({ error: 'CROSS_ORIGIN_DENIED', requestId: reqId }, 403, { 'X-Request-ID': reqId }), reqId }
+  const gate = await requireAal2(request)
+  if (!gate.ok) return { error: apiJson({ error: gate.code, requestId: reqId }, gate.code === 'UNAUTHORIZED' ? 401 : 403, { 'X-Request-ID': reqId }), reqId }
+  const user = gate.auth.user
   if (!isFlowPayAdmin(user)) return { error: apiJson({ error: 'FORBIDDEN', requestId: reqId }, 403, { 'X-Request-ID': reqId }), reqId }
-  const rate = await checkRateLimit(request, `admin_provider_rules_${action}`, 60, 60, { subject: user.id })
+  const rate = await checkRateLimit(request, `admin_provider_rules_${action}`, 30, 60, { subject: user.id })
   if (!rate.available) return { error: apiJson({ error: 'SERVICE_UNAVAILABLE', requestId: reqId }, 503, { 'X-Request-ID': reqId }), reqId }
   if (!rate.allowed) return { error: apiJson({ error: 'RATE_LIMITED', requestId: reqId }, 429, { 'Retry-After': '60', 'X-Request-ID': reqId }), reqId }
   return { user, reqId }

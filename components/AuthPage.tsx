@@ -44,9 +44,15 @@ export function AuthPage(){
     setMessage(null);setLoading(true)
     try{
       const supabase=createClient();const {data,error}=await supabase.auth.signInWithPassword({email:email.trim(),password});if(error)throw error
-      const uid=data.user?.id;let target='/dashboard'
-      if(uid){const {data:profile}=await supabase.from('company_profiles').select('onboarding_completed_at,name,country,preferred_currency').eq('user_id',uid).maybeSingle();if(!profile?.onboarding_completed_at&&!profile?.name&&!profile?.country&&!profile?.preferred_currency)target='/onboarding'}
-      router.replace(target);router.refresh()
+      if(!data.user)throw new Error('UNAUTHORIZED')
+      const {data:onboarding,error:onboardingError}=await supabase.rpc('flowpay_onboarding_status');if(onboardingError)throw onboardingError
+      const target=onboarding?'/dashboard':'/onboarding'
+      if(target==='/onboarding'){router.replace(target);router.refresh();return}
+      const {data:aal,error:aalError}=await supabase.auth.mfa.getAuthenticatorAssuranceLevel();if(aalError)throw aalError
+      if(aal.currentLevel==='aal2')router.replace(target)
+      else if(aal.nextLevel==='aal2')router.replace(`/mfa?next=${encodeURIComponent(target)}`)
+      else router.replace(`/settings/security?required=1&next=${encodeURIComponent(target)}`)
+      router.refresh()
     }catch(error){setMessage({kind:'error',text:messageFor(error,c)})}finally{setLoading(false)}
   }
 
@@ -60,8 +66,8 @@ export function AuthPage(){
           <p className="mt-4 max-w-[390px] text-[14px] leading-6 text-[var(--fp-muted)]">{c.sub}</p>
 
           <form onSubmit={submit} className="mt-8 space-y-4">
-            <label className="block space-y-2 text-[13px] font-medium text-[#59645d]"><span>{c.email}</span><Input autoFocus type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} required className="h-[50px]"/></label>
-            <label className="block space-y-2 text-[13px] font-medium text-[#59645d]"><div className="flex items-center justify-between"><span>{c.password}</span><button type="button" onClick={resetPassword} disabled={loading} className="text-[12px] font-semibold text-[var(--fp-green)] hover:underline disabled:opacity-50">{c.forgot}</button></div><div className="relative"><Input type={show?'text':'password'} autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required className="h-[50px] pr-12"/><button type="button" onClick={()=>setShow(v=>!v)} className="absolute inset-y-0 right-0 grid w-11 place-items-center text-[var(--fp-subtle)] hover:text-[var(--fp-text)]" aria-label={show?'Hide password':'Show password'}>{show?<EyeOff size={16}/>:<Eye size={16}/>}</button></div></label>
+            <label className="block space-y-2 text-[13px] font-medium text-[#59645d]"><span>{c.email}</span><Input autoFocus type="email" autoComplete="email" maxLength={320} value={email} onChange={e=>setEmail(e.target.value)} required className="h-[50px]"/></label>
+            <label className="block space-y-2 text-[13px] font-medium text-[#59645d]"><div className="flex items-center justify-between"><span>{c.password}</span><button type="button" onClick={resetPassword} disabled={loading} className="text-[12px] font-semibold text-[var(--fp-green)] hover:underline disabled:opacity-50">{c.forgot}</button></div><div className="relative"><Input type={show?'text':'password'} autoComplete="current-password" maxLength={128} value={password} onChange={e=>setPassword(e.target.value)} required className="h-[50px] pr-12"/><button type="button" onClick={()=>setShow(v=>!v)} className="absolute inset-y-0 right-0 grid w-11 place-items-center text-[var(--fp-subtle)] hover:text-[var(--fp-text)]" aria-label={show?'Hide password':'Show password'}>{show?<EyeOff size={16}/>:<Eye size={16}/>}</button></div></label>
             {message&&<div className={`rounded-[11px] border px-3.5 py-3 text-[13px] leading-5 ${message.kind==='success'?'border-[#cfe3d4] bg-[var(--fp-green-soft)] text-[var(--fp-green-strong)]':'border-[#f0cfd2] bg-[var(--fp-red-soft)] text-[var(--fp-red)]'}`}>{message.text}</div>}
             <Button size="lg" className="h-[50px] w-full" disabled={loading||!email.trim()||!password}>{loading?<Loader2 size={16} className="animate-spin"/>:<LockKeyhole size={16}/>} {c.button}</Button>
           </form>

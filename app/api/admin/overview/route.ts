@@ -1,4 +1,4 @@
-import { authenticatedUser } from '@/lib/server-auth'
+import { requireAal2 } from '@/lib/server-auth'
 import { isFlowPayAdmin } from '@/lib/admin-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { checkRateLimit } from '@/lib/rate-limit'
@@ -8,8 +8,9 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
   const reqId = requestId(request)
-  const user = await authenticatedUser(request)
-  if (!user) return apiJson({ error: 'UNAUTHORIZED', requestId: reqId }, 401, { 'X-Request-ID': reqId })
+  const gate = await requireAal2(request)
+  if (!gate.ok) return apiJson({ error: gate.code, requestId: reqId }, gate.code === 'UNAUTHORIZED' ? 401 : 403, { 'X-Request-ID': reqId })
+  const user = gate.auth.user
   if (!isFlowPayAdmin(user)) return apiJson({ error: 'FORBIDDEN', requestId: reqId }, 403, { 'X-Request-ID': reqId })
   const rate = await checkRateLimit(request, 'admin_overview', 120, 60, { subject: user.id })
   if (!rate.available) return apiJson({ error: 'SERVICE_UNAVAILABLE', requestId: reqId }, 503, { 'X-Request-ID': reqId })

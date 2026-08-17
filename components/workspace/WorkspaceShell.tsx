@@ -96,7 +96,7 @@ export function WorkspaceShell({children}:{children:React.ReactNode}){
 
     <nav className="fp-shell-mobile-nav fixed inset-x-0 bottom-0 z-40 grid h-[68px] grid-cols-5 border-t border-[var(--fp-border)] bg-white/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-md lg:hidden">
       {([['overview','/dashboard'],['payments','/payments']] as const).map(([key,path])=>{const Icon=iconMap[key];const active=pathname===path;return <Link key={key} href={path} className={cn('flex flex-col items-center justify-center gap-1 text-[14px] font-medium text-[var(--fp-muted)]',active&&'text-[var(--fp-green)]')}><Icon size={18}/>{t.nav[key]}</Link>})}
-      <Link href="/payments?new=1" className="mx-auto -mt-4 grid size-12 place-items-center self-center rounded-full bg-[var(--fp-green)] text-white shadow-lg shadow-green-900/15"><Plus size={22}/></Link>
+      <Link href="/payments/new" className="mx-auto -mt-4 grid size-12 place-items-center self-center rounded-full bg-[var(--fp-green)] text-white shadow-lg shadow-green-900/15"><Plus size={22}/></Link>
       <Link href="/routes" className={cn('flex flex-col items-center justify-center gap-1 text-[14px] font-medium text-[var(--fp-muted)]',pathname==='/routes'&&'text-[var(--fp-green)]')}><Route size={18}/>{t.nav.routes}</Link>
       <button onClick={()=>setMobileOpen(true)} className="flex flex-col items-center justify-center gap-1 text-[14px] font-medium text-[var(--fp-muted)]"><Menu size={18}/>{copy.common.more}</button>
     </nav>

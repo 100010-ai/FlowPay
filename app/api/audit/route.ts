@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     const potentialSaving = Math.max(0, Math.round((actualFee - best.fee) * 100) / 100)
 
     const { error } = await admin.from('audit_requests').insert({
-      user_id: auth?.user.id ?? null,
+      user_id: auth?.assuranceLevel === 'aal2' ? auth.user.id : null,
       email,
       from_country: fromCountry,
       to_country: toCountry,
