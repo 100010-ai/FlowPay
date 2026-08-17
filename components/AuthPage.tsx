@@ -44,9 +44,11 @@ export function AuthPage(){
     setMessage(null);setLoading(true)
     try{
       const supabase=createClient();const {data,error}=await supabase.auth.signInWithPassword({email:email.trim(),password});if(error)throw error
-      if(!data.user)throw new Error('UNAUTHORIZED')
-      const {data:onboarding,error:onboardingError}=await supabase.rpc('flowpay_onboarding_status');if(onboardingError)throw onboardingError
-      const target=onboarding?'/dashboard':'/onboarding'
+      if(!data.user||!data.session?.access_token)throw new Error('UNAUTHORIZED')
+      const statusResponse=await fetch('/api/onboarding/status',{headers:{Authorization:`Bearer ${data.session.access_token}`},cache:'no-store'})
+      if(!statusResponse.ok)throw new Error('ONBOARDING_STATUS_FAILED')
+      const onboarding=await statusResponse.json() as {completed:boolean}
+      const target=onboarding.completed?'/dashboard':'/onboarding'
       if(target==='/onboarding'){router.replace(target);router.refresh();return}
       const {data:aal,error:aalError}=await supabase.auth.mfa.getAuthenticatorAssuranceLevel();if(aalError)throw aalError
       if(aal.currentLevel==='aal2')router.replace(target)

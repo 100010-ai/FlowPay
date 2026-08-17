@@ -2329,3 +2329,38 @@ grant execute on function public.flowpay_record_api_usage(uuid,text,integer,inte
 grant execute on function public.flowpay_prune_operational_data() to service_role;
 
 commit;
+
+-- FlowPay v1.7.1 — legacy account/company compatibility.
+-- Existing valid company profiles created before onboarding_completed_at was
+-- introduced are grandfathered without creating legal acceptance receipts.
+update public.company_profiles
+set onboarding_completed_at = coalesce(onboarding_completed_at, updated_at, created_at, now()),
+    updated_at = greatest(coalesce(updated_at, created_at, now()), coalesce(created_at, now()))
+where onboarding_completed_at is null
+  and length(trim(coalesce(name, ''))) between 2 and 160
+  and upper(trim(coalesce(country, ''))) ~ '^[A-Z]{2}$'
+  and upper(trim(coalesce(preferred_currency, ''))) ~ '^[A-Z]{3}$';
+
+create or replace function public.flowpay_onboarding_status()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists(
+    select 1
+    from public.company_profiles
+    where user_id = auth.uid()
+      and (
+        onboarding_completed_at is not null
+        or (
+          length(trim(coalesce(name, ''))) between 2 and 160
+          and upper(trim(coalesce(country, ''))) ~ '^[A-Z]{2}$'
+          and upper(trim(coalesce(preferred_currency, ''))) ~ '^[A-Z]{3}$'
+        )
+      )
+  );
+$$;
+revoke all on function public.flowpay_onboarding_status() from public, anon;
+grant execute on function public.flowpay_onboarding_status() to authenticated;

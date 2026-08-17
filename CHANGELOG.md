@@ -1,3 +1,13 @@
+# Changelog
+
+## 1.7.1
+
+- Fixed legacy account/company compatibility after the v1.6 AAL2 hardening.
+- Existing valid company profiles without `onboarding_completed_at` are safely grandfathered by `supabase/upgrade-v171.sql`; company rows are not recreated or overwritten.
+- `flowpay_onboarding_status()` now recognizes a valid legacy company profile even before the compatibility backfill is complete.
+- Onboarding checks existing account state before showing/saving the setup form and routes completed accounts through MFA instead of creating a second setup flow.
+- `/api/onboarding` is idempotent for already-completed accounts and returns explicit legal-acceptance errors instead of an opaque 500.
+
 # FlowPay changelog
 
 ## 1.7.0

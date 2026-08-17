@@ -3,6 +3,7 @@ import { authenticatedClient } from '@/lib/server-auth'
 import { isSupportedCountry, isSupportedCurrency } from '@/lib/countries'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { apiJson, bodyErrorResponse, readJsonBody, requestId, trustedMutationOrigin } from '@/lib/http'
+import { resolveOnboardingState } from '@/lib/onboarding-state'
 
 const schema = z.object({
   name: z.string().trim().min(2).max(160),
@@ -22,13 +23,25 @@ export async function POST(request: Request) {
   try {
     const parsed = schema.safeParse(await readJsonBody(request, 16_384))
     if (!parsed.success) return apiJson({ error: 'INVALID_PROFILE', requestId: reqId }, 400, { 'X-Request-ID': reqId })
+    const state = await resolveOnboardingState(auth.user.id, auth.client)
+    if (state.completed) return apiJson({ ok: true, alreadyCompleted: true, legacyProfile: state.legacyProfile, requestId: reqId }, 200, { 'X-Request-ID': reqId })
+
     const { error } = await auth.client.rpc('flowpay_complete_onboarding', {
       p_name: parsed.data.name,
       p_country: parsed.data.country,
       p_currency: parsed.data.currency,
       p_timezone: parsed.data.timezone,
     })
-    if (error) return apiJson({ error: 'PROFILE_SAVE_FAILED', requestId: reqId }, 500, { 'X-Request-ID': reqId })
+    if (error) {
+      const message = String(error.message || '')
+      if (message.includes('ONBOARDING_ALREADY_COMPLETED')) {
+        return apiJson({ ok: true, alreadyCompleted: true, requestId: reqId }, 200, { 'X-Request-ID': reqId })
+      }
+      if (message.includes('LEGAL_ACCEPTANCE_REQUIRED')) {
+        return apiJson({ error: 'LEGAL_ACCEPTANCE_REQUIRED', requestId: reqId }, 409, { 'X-Request-ID': reqId })
+      }
+      return apiJson({ error: 'PROFILE_SAVE_FAILED', requestId: reqId }, 500, { 'X-Request-ID': reqId })
+    }
     return apiJson({ ok: true, requestId: reqId }, 200, { 'X-Request-ID': reqId })
   } catch (error) {
     const bodyError = bodyErrorResponse(error, reqId)

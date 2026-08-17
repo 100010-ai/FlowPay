@@ -13,11 +13,11 @@ import { countryName, countryOptions, currencyOptions, defaultCurrencyForCountry
 import { createClient } from '@/lib/supabase/client'
 
 const copy={
-  ru:{eyebrow:'Настройка аккаунта',title:'Подготовим FlowPay к работе',sub:'Три базовых параметра нужны для корректных валют, отчётности и платёжных направлений.',company:'Название компании',companyPh:'ООО / компания',country:'Страна компании',currency:'Базовая валюта',hint:'Её можно изменить позже в настройках.',button:'Продолжить в FlowPay',saving:'Сохраняем…',error:'Не удалось сохранить настройки. Попробуйте ещё раз.',steps:['Компания','Регион','Отчётность'],safe:'Настройки применяются только к вашему аккаунту.',detecting:'Определяем регион…',detected:'Регион определён автоматически',detectedSub:'FlowPay использовал регион подключения только для начальной настройки. Проверьте данные перед продолжением.',manual:'Страну не удалось определить автоматически. Выберите её вручную.',timezone:'Часовой пояс'},
-  en:{eyebrow:'Account setup',title:'Set up FlowPay for your business',sub:'Three details let us configure reporting, currencies and relevant payment corridors.',company:'Company name',companyPh:'Your company',country:'Company country',currency:'Reporting currency',hint:'You can change this later in Settings.',button:'Continue to FlowPay',saving:'Saving…',error:'We could not save your settings. Please try again.',steps:['Company','Region','Reporting'],safe:'These settings apply only to your account.',detecting:'Detecting region…',detected:'Region detected automatically',detectedSub:'FlowPay used the connection region only for initial setup. Review it before continuing.',manual:'We could not detect your country automatically. Choose it manually.',timezone:'Time zone'},
-  fr:{eyebrow:'Configuration',title:'Configurez FlowPay pour votre entreprise',sub:'Trois informations suffisent pour préparer les devises, rapports et corridors.',company:'Nom de l’entreprise',companyPh:'Votre entreprise',country:'Pays',currency:'Devise de reporting',hint:'Modifiable plus tard dans les paramètres.',button:'Continuer vers FlowPay',saving:'Enregistrement…',error:'Impossible d’enregistrer. Réessayez.',steps:['Entreprise','Région','Reporting'],safe:'Ces paramètres ne concernent que votre compte.',detecting:'Détection de la région…',detected:'Région détectée automatiquement',detectedSub:'FlowPay a utilisé la région de connexion uniquement pour la configuration initiale. Vérifiez les données.',manual:'Impossible de détecter automatiquement le pays. Sélectionnez-le manuellement.',timezone:'Fuseau horaire'},
-  de:{eyebrow:'Einrichtung',title:'FlowPay für Ihr Unternehmen einrichten',sub:'Drei Angaben konfigurieren Reporting, Währungen und relevante Zahlungswege.',company:'Unternehmensname',companyPh:'Ihr Unternehmen',country:'Land',currency:'Berichtswährung',hint:'Später in den Einstellungen änderbar.',button:'Weiter zu FlowPay',saving:'Speichern…',error:'Einstellungen konnten nicht gespeichert werden.',steps:['Unternehmen','Region','Reporting'],safe:'Diese Einstellungen gelten nur für Ihr Konto.',detecting:'Region wird erkannt…',detected:'Region automatisch erkannt',detectedSub:'FlowPay hat die Verbindungsregion nur für die Ersteinrichtung verwendet. Bitte prüfen Sie die Angaben.',manual:'Das Land konnte nicht automatisch erkannt werden. Bitte manuell auswählen.',timezone:'Zeitzone'},
-  es:{eyebrow:'Configuración',title:'Configura FlowPay para tu empresa',sub:'Tres datos bastan para preparar divisas, informes y rutas de pago.',company:'Nombre de empresa',companyPh:'Tu empresa',country:'País',currency:'Moneda de informes',hint:'Podrás cambiarla después en Ajustes.',button:'Continuar a FlowPay',saving:'Guardando…',error:'No se pudo guardar la configuración.',steps:['Empresa','Región','Informes'],safe:'Estos ajustes solo se aplican a tu cuenta.',detecting:'Detectando región…',detected:'Región detectada automáticamente',detectedSub:'FlowPay usó la región de conexión solo para la configuración inicial. Revisa los datos antes de continuar.',manual:'No pudimos detectar el país automáticamente. Selecciónalo manualmente.',timezone:'Zona horaria'},
+  ru:{checking:'Проверяем состояние аккаунта…',legacy:'Аккаунт уже настроен. Перенаправляем в FlowPay…',legal:'Для аккаунта требуется повторно подтвердить юридические документы. Выйдите из аккаунта и начните регистрацию заново.',eyebrow:'Настройка аккаунта',title:'Подготовим FlowPay к работе',sub:'Три базовых параметра нужны для корректных валют, отчётности и платёжных направлений.',company:'Название компании',companyPh:'ООО / компания',country:'Страна компании',currency:'Базовая валюта',hint:'Её можно изменить позже в настройках.',button:'Продолжить в FlowPay',saving:'Сохраняем…',error:'Не удалось сохранить настройки. Попробуйте ещё раз.',steps:['Компания','Регион','Отчётность'],safe:'Настройки применяются только к вашему аккаунту.',detecting:'Определяем регион…',detected:'Регион определён автоматически',detectedSub:'FlowPay использовал регион подключения только для начальной настройки. Проверьте данные перед продолжением.',manual:'Страну не удалось определить автоматически. Выберите её вручную.',timezone:'Часовой пояс'},
+  en:{checking:'Checking account status…',legacy:'Your account is already configured. Redirecting to FlowPay…',legal:'This account must accept the current legal documents before setup can continue.',eyebrow:'Account setup',title:'Set up FlowPay for your business',sub:'Three details let us configure reporting, currencies and relevant payment corridors.',company:'Company name',companyPh:'Your company',country:'Company country',currency:'Reporting currency',hint:'You can change this later in Settings.',button:'Continue to FlowPay',saving:'Saving…',error:'We could not save your settings. Please try again.',steps:['Company','Region','Reporting'],safe:'These settings apply only to your account.',detecting:'Detecting region…',detected:'Region detected automatically',detectedSub:'FlowPay used the connection region only for initial setup. Review it before continuing.',manual:'We could not detect your country automatically. Choose it manually.',timezone:'Time zone'},
+  fr:{checking:'Vérification du compte…',legacy:'Votre compte est déjà configuré. Redirection vers FlowPay…',legal:'Ce compte doit accepter les documents juridiques actuels avant de continuer.',eyebrow:'Configuration',title:'Configurez FlowPay pour votre entreprise',sub:'Trois informations suffisent pour préparer les devises, rapports et corridors.',company:'Nom de l’entreprise',companyPh:'Votre entreprise',country:'Pays',currency:'Devise de reporting',hint:'Modifiable plus tard dans les paramètres.',button:'Continuer vers FlowPay',saving:'Enregistrement…',error:'Impossible d’enregistrer. Réessayez.',steps:['Entreprise','Région','Reporting'],safe:'Ces paramètres ne concernent que votre compte.',detecting:'Détection de la région…',detected:'Région détectée automatiquement',detectedSub:'FlowPay a utilisé la région de connexion uniquement pour la configuration initiale. Vérifiez les données.',manual:'Impossible de détecter automatiquement le pays. Sélectionnez-le manuellement.',timezone:'Fuseau horaire'},
+  de:{checking:'Kontostatus wird geprüft…',legacy:'Ihr Konto ist bereits eingerichtet. Weiterleitung zu FlowPay…',legal:'Dieses Konto muss die aktuellen rechtlichen Dokumente akzeptieren, bevor die Einrichtung fortgesetzt werden kann.',eyebrow:'Einrichtung',title:'FlowPay für Ihr Unternehmen einrichten',sub:'Drei Angaben konfigurieren Reporting, Währungen und relevante Zahlungswege.',company:'Unternehmensname',companyPh:'Ihr Unternehmen',country:'Land',currency:'Berichtswährung',hint:'Später in den Einstellungen änderbar.',button:'Weiter zu FlowPay',saving:'Speichern…',error:'Einstellungen konnten nicht gespeichert werden.',steps:['Unternehmen','Region','Reporting'],safe:'Diese Einstellungen gelten nur für Ihr Konto.',detecting:'Region wird erkannt…',detected:'Region automatisch erkannt',detectedSub:'FlowPay hat die Verbindungsregion nur für die Ersteinrichtung verwendet. Bitte prüfen Sie die Angaben.',manual:'Das Land konnte nicht automatisch erkannt werden. Bitte manuell auswählen.',timezone:'Zeitzone'},
+  es:{checking:'Comprobando el estado de la cuenta…',legacy:'Tu cuenta ya está configurada. Redirigiendo a FlowPay…',legal:'Esta cuenta debe aceptar los documentos legales actuales antes de continuar.',eyebrow:'Configuración',title:'Configura FlowPay para tu empresa',sub:'Tres datos bastan para preparar divisas, informes y rutas de pago.',company:'Nombre de empresa',companyPh:'Tu empresa',country:'País',currency:'Moneda de informes',hint:'Podrás cambiarla después en Ajustes.',button:'Continuar a FlowPay',saving:'Guardando…',error:'No se pudo guardar la configuración.',steps:['Empresa','Región','Informes'],safe:'Estos ajustes solo se aplican a tu cuenta.',detecting:'Detectando región…',detected:'Región detectada automáticamente',detectedSub:'FlowPay usó la región de conexión solo para la configuración inicial. Revisa los datos antes de continuar.',manual:'No pudimos detectar el país automáticamente. Selecciónalo manualmente.',timezone:'Zona horaria'},
 } as const
 
 type GeoResponse={country:string|null;currency:string|null;timezone:string|null;detected:boolean}
@@ -34,10 +34,37 @@ export default function OnboardingPage(){
   const currencyTouched=useRef(false)
   const [geoState,setGeoState]=useState<'loading'|'detected'|'manual'>('loading')
   const [saving,setSaving]=useState(false)
+  const [checkingAccount,setCheckingAccount]=useState(true)
   const [error,setError]=useState('')
 
   const countries=useMemo(()=>countryOptions(lang).map(([code,label])=>({value:code,label,description:code,leading:<CountryFlag code={code}/>})),[lang])
   const currencies=useMemo(()=>currencyOptions(lang).map(item=>({value:item.code,label:item.code,description:item.name,leading:<span className="grid size-6 place-items-center rounded-[7px] bg-[#eef4ef] text-[12px] font-semibold text-[var(--fp-green-strong)]">{item.symbol}</span>})),[lang])
+
+
+  useEffect(()=>{
+    let cancelled=false
+    let redirecting=false
+    void (async()=>{
+      try{
+        const client=createClient()
+        const {data}=await client.auth.getSession()
+        const token=data.session?.access_token
+        if(!token){redirecting=true;router.replace('/login');return}
+        const response=await fetch('/api/onboarding/status',{headers:{Authorization:`Bearer ${token}`},cache:'no-store'})
+        if(!response.ok)return
+        const status=await response.json() as {completed:boolean}
+        if(!status.completed)return
+        const {data:aal,error:aalError}=await client.auth.mfa.getAuthenticatorAssuranceLevel()
+        if(cancelled)return
+        redirecting=true
+        if(aalError||!aal)router.replace('/settings/security?required=1&next=%2Fdashboard')
+        else if(aal.currentLevel==='aal2')router.replace('/dashboard')
+        else if(aal.nextLevel==='aal2')router.replace('/mfa?next=%2Fdashboard')
+        else router.replace('/settings/security?required=1&next=%2Fdashboard')
+      }finally{if(!cancelled&&!redirecting)setCheckingAccount(false)}
+    })()
+    return()=>{cancelled=true}
+  },[router])
 
   useEffect(()=>{
     let cancelled=false
@@ -78,12 +105,14 @@ export default function OnboardingPage(){
       const token=data.session?.access_token
       if(!token){router.replace('/login');return}
       const response=await fetch('/api/onboarding',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({name:name.trim(),country,currency,timezone})})
-      if(!response.ok)throw new Error('SAVE_FAILED')
+      const payload=await response.json().catch(()=>({})) as {error?:string;alreadyCompleted?:boolean}
+      if(!response.ok){if(payload.error==='LEGAL_ACCEPTANCE_REQUIRED'){setError(c.legal);return}throw new Error('SAVE_FAILED')}
       router.replace('/settings/security?required=1&next=%2Fdashboard');router.refresh()
     }catch{setError(c.error)}finally{setSaving(false)}
   }
 
   const detectedCountry=country?countryName(country,lang):''
+  if(checkingAccount)return <main className="grid min-h-screen place-items-center bg-[#f7f8f5] px-5"><div className="text-center"><FlowPayLogo/><div className="mt-7 inline-flex items-center gap-2 text-[13px] text-[var(--fp-muted)]"><Loader2 size={15} className="animate-spin"/>{c.checking}</div></div></main>
   return <main className="min-h-screen bg-[#f7f8f5] px-4 py-6 sm:px-6 sm:py-10"><div className="mx-auto max-w-[1060px]"><FlowPayLogo/><div className="mt-8 grid overflow-hidden rounded-[24px] border border-[var(--fp-border)] bg-white shadow-[0_30px_90px_rgba(31,52,38,.08)] lg:grid-cols-[.78fr_1.22fr]"><aside className="border-b border-[var(--fp-border)] bg-[#eef4ef] p-7 sm:p-9 lg:border-b-0 lg:border-r"><span className="text-[12px] font-semibold uppercase tracking-[.13em] text-[var(--fp-green)]">{c.eyebrow}</span><h1 className="mt-4 text-[34px] font-semibold leading-[1.05] tracking-[-.055em] sm:text-[42px]">{c.title}</h1><p className="mt-5 max-w-md text-[15px] leading-6 text-[var(--fp-muted)]">{c.sub}</p><div className="mt-9 space-y-3">{c.steps.map((step,i)=><div key={step} className="flex items-center gap-3 rounded-[13px] border border-white/80 bg-white/70 p-3.5"><span className="grid size-8 place-items-center rounded-[9px] bg-white text-[var(--fp-green)] shadow-sm">{i===0?<Building2 size={16}/>:i===1?<Globe2 size={16}/>:<WalletCards size={16}/>}</span><strong className="text-[14px]">{step}</strong><CheckCircle2 size={15} className="ml-auto text-[#9bbca4]"/></div>)}</div></aside><section className="p-6 sm:p-9 lg:p-12"><div className="mx-auto max-w-[540px]"><h2 className="text-[23px] font-semibold tracking-[-.035em]">{c.eyebrow}</h2>
 
     <div className="mt-5 rounded-[13px] border border-[#dce8de] bg-[#f5f9f5] p-4">
