@@ -21,7 +21,7 @@ if(/await supabase\.auth\.mfa\.getAuthenticatorAssuranceLevel\(\)/.test(provider
 
 const pkg=JSON.parse(read('package.json'))
 const lock=JSON.parse(read('package-lock.json'))
-if(!/^1\.(?:7\.[3-9][0-9]*|8\.\d+)$/.test(pkg.version)) failures.push(`expected package version >=1.7.3, found ${pkg.version}`)
+if(!/^1\.(?:7\.[3-9][0-9]*|8\.\d+|9\.\d+)$/.test(pkg.version) && !/^2\.\d+\.\d+$/.test(pkg.version)) failures.push(`expected package version >=1.7.3, found ${pkg.version}`)
 if(lock.version!==pkg.version||lock.packages?.['']?.version!==pkg.version) failures.push('package-lock root metadata does not match package version')
 if(!String(pkg.scripts?.audit||'').includes('v173-auth-loop-audit.mjs')) failures.push('main audit does not include v1.7.3 auth-loop audit')
 

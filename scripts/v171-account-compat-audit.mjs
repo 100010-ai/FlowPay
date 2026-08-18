@@ -37,7 +37,7 @@ if(!helper.includes(".maybeSingle<LegacyProfileRow>()")) failures.push('legacy f
 
 const pkg=JSON.parse(read('package.json'))
 const lock=JSON.parse(read('package-lock.json'))
-if(!/^1\.(?:7\.[1-9][0-9]*|8\.\d+)$/.test(pkg.version)) failures.push(`expected package version >=1.7.1 <1.8.0, found ${pkg.version}`)
+if(!/^1\.(?:7\.[1-9][0-9]*|8\.\d+|9\.\d+)$/.test(pkg.version) && !/^2\.\d+\.\d+$/.test(pkg.version)) failures.push(`expected package version >=1.7.1, found ${pkg.version}`)
 if(lock.version!==pkg.version||lock.packages?.['']?.version!==pkg.version) failures.push('package-lock root metadata does not match package version')
 if(!String(pkg.scripts?.audit||'').includes('v171-account-compat-audit.mjs')) failures.push('main audit does not include v1.7.1 compatibility audit')
 

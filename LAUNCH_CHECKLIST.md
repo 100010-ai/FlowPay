@@ -1,10 +1,11 @@
-# FlowPay 1.7 — чеклист перед запуском
+# FlowPay 2.0 — чеклист перед запуском
 
 Кодовая часть, которую можно закрыть без твоего юрлица, домена и договоров с платёжными партнёрами, подготовлена. Перед закрытой бетой пройди пункты ниже.
 
 ## Обязательно перед private beta
 
 - [ ] На существующей базе после `upgrade-v13.sql` обязательно выполнить `supabase/upgrade-v15.sql` для защищённого журнала принятия Privacy/Terms.
+- [ ] На существующей базе применить миграции до v1.9, затем **последней** выполнить `supabase/upgrade-v20.sql` до деплоя FlowPay 2.0. `upgrade-v19.sql` всё ещё обязателен до открытия регистрации.
 - [ ] В Vercel задать `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`.
 - [ ] Задать `FLOWPAY_ADMIN_USER_IDS` для всех операторов `/admin`; email-based доступ не используется.
 - [ ] Задать `NEXT_PUBLIC_APP_URL` на production HTTPS-домен.
@@ -25,13 +26,15 @@
 4. Создать счёт.
 5. Создать платёж из счёта.
 6. Запросить маршрут и убедиться, что возвращаются только реально настроенные правила.
-7. Провести платёж `draft → ready → paid → received` и проверить синхронизацию связанного счёта.
+   Проверить также отсутствие подходящего правила: ответ не должен подставлять каталог провайдеров или синтетический маршрут.
+7. Включить Payment Controls, создать платёж выше threshold, запросить approval и убедиться, что `ready/paid` блокируются до решения. После `approved` провести `draft/ready → paid → received` и проверить связанный счёт.
 8. Создать API-ключ, вызвать `POST /api/v1/quote`, затем отозвать ключ.
 9. Проверить CSV-импорт контрагентов/счетов и экспорт Payments/Reports.
 10. Открыть `/status` и проверить основные системы.
 11. Открыть `/admin` операторским аккаунтом и проверить CRUD платёжных правил.
 12. Проверить desktop/mobile, logout/login, пустые состояния и rate-limit ошибки.
-13. На Preview выполнить `npm run load:smoke` с безопасной тестовой нагрузкой и проверить p95/error rate.
+13. Проверить `/operations`, `/treasury`, `/activity` и global search (`Ctrl/Cmd + K`) на desktop/mobile.
+14. На Preview выполнить `npm run load:smoke` с безопасной тестовой нагрузкой и проверить p95/error rate.
 
 ## Что остаётся внешней работой
 
@@ -88,3 +91,28 @@
 - [ ] Юридические реквизиты оператора вручную проверены в Privacy/Terms перед коммерческим запуском.
 - [ ] CSV-экспорт Users и Operations скачивает только данные, уже загруженные в admin console.
 - [ ] Route editor сохраняет и удаляет правила только после AAL2 admin gate; удаление требует подтверждения.
+
+
+## FlowPay 1.9 network / registration checks
+
+- [ ] `supabase/upgrade-v19.sql` применён до деплоя приложения v1.9.
+- [ ] Новая регистрация создаёт две записи `registration_server`, а `REGISTRATION_SCHEMA_NOT_READY` не создаёт Auth user.
+- [ ] При искусственном отказе `system_event_logs` основная успешная операция не превращается в 500 только из-за telemetry.
+- [ ] `/admin` отдельно показывает provider catalog и фактический production routing.
+- [ ] Provider preset не создаёт pricing rule автоматически: комиссия, лимиты, валюты и направление сохраняются только после явного admin save.
+- [ ] Route rule принимает более 12 валют и позволяет использовать весь платформенный справочник, если это подтверждено источником.
+- [ ] При отсутствии active `provider_rules` quote возвращает отсутствие маршрута; никакого fallback нет.
+
+## FlowPay 2.0 control-plane checks
+
+- [ ] `supabase/upgrade-v20.sql` применён после v1.9 migration и до первого запуска UI 2.0.
+- [ ] `/operations` не показывает demo-задачи: очередь формируется только из фактических платежей, счетов, контрагентов и production route metadata.
+- [ ] Approval policy в Settings корректно помечает новые и активные платежи; cross-currency payment требует approval без синтетической конвертации threshold.
+- [ ] `required`, `pending` и `rejected` не могут перейти в `ready`/`paid` через server RPC.
+- [ ] Approval request/decision появляются в `/activity` и в истории `/approvals`.
+- [ ] Duplicate Guard предупреждает о вероятном дубле, но не удаляет и не изменяет существующие платежи.
+- [ ] `/treasury` не суммирует валюту в reporting currency, если референсный курс отсутствует; такая экспозиция остаётся отдельной.
+- [ ] `/routes` при отсутствии production rule показывает no-route state; provider catalog никогда не становится fallback.
+- [ ] `Ctrl/Cmd + K` находит реальные платежи, контрагентов и счета без раскрытия чужих workspace rows.
+- [ ] Admin Operations показывает approval queue и статусы без cross-currency фиктивных агрегатов.
+

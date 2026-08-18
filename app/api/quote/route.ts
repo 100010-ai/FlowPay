@@ -33,6 +33,7 @@ export async function POST(request: Request) {
 
     const { fromCountry, toCountry, amount, sourceCurrency, recipientCurrency } = parsed.data
     const rules = await getEligibleProviderRules({ fromCountry, toCountry, amount, sourceCurrency, recipientCurrency })
+    if (rules.length === 0) return apiJson({ error: 'NO_ELIGIBLE_PROVIDER_ROUTES', requestId: reqId }, 422, { 'X-Request-ID': reqId })
     const referenceFx = await getReferenceFx(sourceCurrency, recipientCurrency)
     const recipientRate = referenceFx.rate
     const routes = buildRoutes(rules, amount, fromCountry, toCountry, recipientRate)
@@ -73,6 +74,7 @@ export async function POST(request: Request) {
   } catch (error) {
     const bodyError = bodyErrorResponse(error, reqId)
     if (bodyError) return bodyError
+    if (safeErrorMessage(error) === 'NO_ELIGIBLE_PROVIDER_ROUTES') return apiJson({ error: 'NO_ELIGIBLE_PROVIDER_ROUTES', requestId: reqId }, 422, { 'X-Request-ID': reqId })
     await logSystemEvent({ level: 'error', source: 'quote', code: 'QUOTE_FAILED', message: safeErrorMessage(error), metadata: { requestId: reqId } })
     return apiJson({ error: 'QUOTE_FAILED', requestId: reqId }, 500, { 'X-Request-ID': reqId })
   }

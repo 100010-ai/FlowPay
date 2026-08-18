@@ -1,6 +1,40 @@
-# FlowPay 1.7
+# FlowPay 2.0
 
-FlowPay — B2B-сервис для сравнения маршрутов международных платежей, управления контрагентами, счетами, платежами, отчётами и API-доступом. Версия 1.7 — launch/admin release поверх security baseline 1.6: единая operator console, launch readiness, пользователи, операции, API/security telemetry и production routing.
+FlowPay — B2B payment operations platform: сравнение production-маршрутов международных платежей, платёжный workflow, контроль согласований, обязательства, контрагенты, счета, отчётность и API. Версия 2.0 превращает workspace из набора отдельных экранов в единый **control plane** для ежедневной работы с платежами.
+
+Ключевой инвариант не изменился: **никаких fallback-маршрутов**. Quote создаётся только из активных проверенных `provider_rules`; если подходящего правила нет, FlowPay возвращает отсутствие маршрута. Каталог платёжных сетей, справочные FX-курсы и UI никогда не подменяют production pricing.
+
+## Что нового в 2.0
+
+- **Operations Center (`/operations`)** — приоритетная рабочая очередь из реальных данных: просрочки, ближайшие платежи, routing gaps, approval queue, счета без платежей, неполные банковские реквизиты и устаревшие provider rules.
+- **Payment Controls (`/approvals`)** — настраиваемый approval gate по сумме и reporting currency с immutable snapshot каждой request/decision записи. Для cross-currency платежей контроль не делает синтетическую FX-конвертацию: такой платёж требует явного согласования.
+- **Treasury (`/treasury`)** — 7/30/90-day commitments, overdue exposure, валютная структура и календарь обязательств. Нормализация выполняется только при наличии референсного FX; отсутствующие курсы не выдумываются и остаются отдельными валютами.
+- **Settlement Watch** — оплаченные платежи, которые не получили `Received` после ETA сохранённого production route, автоматически попадают в Operations. Если у платежа нет route ETA, FlowPay его не выдумывает.
+- **Activity (`/activity`)** — единая timeline платежных изменений, approval events и workspace/security audit событий.
+- **Duplicate Guard** — форма платежа предупреждает о вероятном дубле по контрагенту, invoice number либо комбинации amount/currency/due date. Предупреждение не скрывает данные и не делает необратимых действий.
+- **Approval Preview** — ещё до сохранения форма показывает, попадёт ли платёж под текущую policy.
+- **Command Palette / Global Search (`Ctrl/Cmd + K`)** — быстрый переход к разделам, действиям, платежам, контрагентам и счетам.
+- **Dashboard Control Hub** — Ops Score, critical tasks, approvals, routing health и next best action прямо на главном экране.
+- **Route Intelligence** — выдача маршрутов показывает только фактически подходящие production rules, freshness источников, cheapest/fastest варианты и явно фиксирует отсутствие fallback.
+- **Admin 2.0 telemetry** — approval queue и контрольные статусы добавлены в operator console.
+- Обновлена навигация, mobile shell, таблицы, карточки и визуальная иерархия. Интерфейс стал плотнее и ровнее без декоративного шума.
+- Добавлена миграция `supabase/upgrade-v20.sql` и regression audit `npm run audit:v20`.
+
+### Важное ограничение approval-системы
+
+Текущая модель FlowPay остаётся user-owned workspace. Approval в 2.0 — это **явный контрольный checkpoint**, а не полноценная segregation-of-duties / maker-checker схема между разными сотрудниками. Для настоящего four-eyes контроля потребуется отдельная multi-user organization/roles модель.
+
+## Что нового в 1.9
+
+- Добавлен отдельный каталог из 13 международных платёжных/инфраструктурных сетей с документированным охватом и официальным источником. Каталог не содержит тарифов и сам по себе не создаёт маршрут.
+- Платформенный справочник содержит 249 ISO стран/территорий и 153 валюты; route-rule editor теперь позволяет назначать весь справочник валют одному проверенному правилу, а не максимум 12.
+- Public/Admin coverage разделены на **network catalog** и **production routing**, чтобы большой потенциальный охват не выдавался за реально подключённые маршруты.
+- В admin Routes добавлены provider presets и источники; цены, лимиты и комиссии по-прежнему вводятся только как проверенные production rules.
+- Исправлен сценарий `REGISTRATION_ROLLBACK_FAILED`: v1.9 проверяет готовность legal-ledger schema до `auth.signUp`, пишет обе legal receipts одним server-only RPC и отдельно журналирует первичную ошибку и ошибку rollback.
+- Сбой `system_event_logs` больше не превращает успешную основную операцию в HTTP 500.
+- Добавлена `supabase/upgrade-v19.sql` и regression audit `npm run audit:v19`.
+
+**Fallback-маршрутов нет.** Если для страны, валют и суммы нет активного проверенного правила, FlowPay возвращает отсутствие доступного маршрута и ничего не синтезирует.
 
 ## Что нового в 1.7
 
@@ -41,7 +75,7 @@ FlowPay — B2B-сервис для сравнения маршрутов меж
 - Security Center показывает способ входа, состояние MFA, срок текущей сессии и последние изменения API-доступа/профиля из audit log.
 - Добавлен `npm run audit:v14`, который защищает новые продуктовые функции от регрессий.
 
-FlowPay 1.7 сохраняет security baseline v1.6 и требует `supabase/upgrade-v16.sql` на существующей v1.5 базе; на более старой базе сначала применяются предыдущие migrations в порядке ниже.
+FlowPay 2.0 сохраняет security baseline v1.6, production-only routing v1.9 и добавляет `supabase/upgrade-v20.sql`. Для существующей базы миграции применяются последовательно; v2.0 migration выполняется последней.
 
 ## Что изменилось в 1.3
 
@@ -84,10 +118,34 @@ FlowPay 1.7 сохраняет security baseline v1.6 и требует `supabas
 supabase/schema.sql
 ```
 
-### База уже на FlowPay 1.5
+### База уже на FlowPay 1.9.x
+
+```text
+supabase/upgrade-v20.sql
+```
+
+### База на FlowPay 1.8.x
+
+```text
+supabase/upgrade-v19.sql
+supabase/upgrade-v20.sql
+```
+
+### База на FlowPay 1.6 / 1.7.x
+
+```text
+supabase/upgrade-v171.sql
+supabase/upgrade-v19.sql
+supabase/upgrade-v20.sql
+```
+
+### База на FlowPay 1.5
 
 ```text
 supabase/upgrade-v16.sql
+supabase/upgrade-v171.sql
+supabase/upgrade-v19.sql
+supabase/upgrade-v20.sql
 ```
 
 ### База на FlowPay 1.3/1.4
@@ -95,6 +153,9 @@ supabase/upgrade-v16.sql
 ```text
 supabase/upgrade-v15.sql
 supabase/upgrade-v16.sql
+supabase/upgrade-v171.sql
+supabase/upgrade-v19.sql
+supabase/upgrade-v20.sql
 ```
 
 ### База на FlowPay 1.2.x
@@ -103,41 +164,16 @@ supabase/upgrade-v16.sql
 supabase/upgrade-v13.sql
 supabase/upgrade-v15.sql
 supabase/upgrade-v16.sql
+supabase/upgrade-v171.sql
+supabase/upgrade-v19.sql
+supabase/upgrade-v20.sql
 ```
 
-### База на FlowPay 1.1.x
+Для ещё более старой базы сначала последовательно выполни имеющиеся `upgrade-v10.sql` → `upgrade-v13.sql`, затем `upgrade-v15.sql`, `upgrade-v16.sql`, `upgrade-v171.sql`, `upgrade-v19.sql` и **последней** `upgrade-v20.sql`.
 
-```text
-supabase/upgrade-v12.sql
-supabase/upgrade-v13.sql
-supabase/upgrade-v15.sql
-supabase/upgrade-v16.sql
-```
+**Важно:** `upgrade-v19.sql` по-прежнему нужен до открытия регистрации, а `upgrade-v20.sql` должен быть применён **до деплоя UI/API FlowPay 2.0**. Код 2.0 читает approval-поля и `payment_approval_events`; без миграции workspace будет получать ошибки загрузки.
 
-### База на FlowPay 1.0.x
-
-```text
-supabase/upgrade-v11.sql
-supabase/upgrade-v12.sql
-supabase/upgrade-v13.sql
-supabase/upgrade-v15.sql
-supabase/upgrade-v16.sql
-```
-
-### База ещё v0.5.x
-
-```text
-supabase/upgrade-v10.sql
-supabase/upgrade-v11.sql
-supabase/upgrade-v12.sql
-supabase/upgrade-v13.sql
-supabase/upgrade-v15.sql
-supabase/upgrade-v16.sql
-```
-
-**Важно:** для существующей production-базы `upgrade-v16.sql` нужно применить до открытия новой регистрации v1.6, потому что server registration пишет новый trusted source `registration_server`.
-
-Миграции не добавляют выдуманные тарифы платёжных провайдеров. Реальные правила добавляются оператором через `/admin`.
+Миграции не добавляют выдуманные тарифы платёжных провайдеров. Каталог сетей — справочный; реальные маршруты и комиссии добавляются оператором через `/admin` как проверенные `provider_rules`.
 
 ## Локальный запуск
 
@@ -239,6 +275,13 @@ curl -X POST https://flowpay-network.vercel.app/api/v1/quote \
 
 Исходный архив поставляется без `node_modules`, `.next`, `.git` и файлов окружения. Устанавливай зависимости через `npm ci` и перед production выполняй проверки из `LAUNCH_CHECKLIST.md`. Результаты аудита этой сборки находятся в `AUDIT_REPORT.md`.
 
+
+### v1.9 network & registration hardening
+
+- Network catalog: 13 provider networks, kept separate from pricing/routing rules.
+- Platform directory: 249 ISO countries/territories and 153 currencies.
+- Route rules accept the complete platform currency directory; actual quotes still require active verified production rules.
+- Registration requires `upgrade-v19.sql` and performs schema readiness before account creation.
 
 ### v1.8 product polish
 

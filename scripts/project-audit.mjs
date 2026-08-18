@@ -83,7 +83,7 @@ for(const sqlFile of ['supabase/schema.sql','supabase/upgrade-v10.sql','supabase
 
 // 6. Package contract.
 const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'))
-if(!/^1\.(?:6|7|8)\.\d+$/.test(pkg.version)) fail(`package.json version is ${pkg.version}, expected FlowPay 1.6+`)
+if(!/^1\.(?:6|7|8|9)\.\d+$/.test(pkg.version) && !/^2\.\d+\.\d+$/.test(pkg.version)) fail(`package.json version is ${pkg.version}, expected FlowPay >=1.6.0`)
 for(const dep of ['next','react','@supabase/supabase-js','tailwindcss','@tailwindcss/postcss','lucide-react','recharts','country-flag-icons','zod']){
   if(!(dep in (pkg.dependencies||{})) && !(dep in (pkg.devDependencies||{}))) fail(`Missing required dependency: ${dep}`)
 }

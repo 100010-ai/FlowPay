@@ -18,7 +18,7 @@ async function wikidataBanks(country:string,lang:string):Promise<BankDirectoryEn
   const url=new URL('https://query.wikidata.org/sparql')
   url.searchParams.set('query',query)
   url.searchParams.set('format','json')
-  const response=await fetch(url,{headers:{Accept:'application/sparql-results+json','User-Agent':'FlowPay/1.8 bank-directory (https://flowpay-network.vercel.app/security)'},next:{revalidate:86_400},signal:AbortSignal.timeout(5_500)})
+  const response=await fetch(url,{headers:{Accept:'application/sparql-results+json','User-Agent':'FlowPay/2.0 bank-directory (https://flowpay-network.vercel.app/security)'},next:{revalidate:86_400},signal:AbortSignal.timeout(5_500)})
   if(!response.ok)throw new Error(`WIKIDATA_${response.status}`)
   const payload=await response.json() as WikidataResponse
   return dedupe((payload.results?.bindings||[]).map(row=>({

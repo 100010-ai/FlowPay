@@ -21,6 +21,13 @@ export function redactText(value: string, maxLength = 600) {
 export function safeErrorMessage(error: unknown) {
   if (error instanceof Error) return redactText(error.message || error.name || 'ERROR')
   if (typeof error === 'string') return redactText(error)
+  // Supabase/PostgREST errors are plain objects rather than Error instances.
+  // Read only the top-level message and keep the same redaction boundary; never
+  // serialize details/hints/rows into operational logs.
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message?: unknown }).message
+    if (typeof message === 'string' && message.trim()) return redactText(message)
+  }
   return 'UNEXPECTED_ERROR'
 }
 

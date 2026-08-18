@@ -15,7 +15,7 @@ if(!counterparty.includes('<BankSearchField'))failures.push('Counterparty form d
 if(!counterparty.includes('if(bank.bic)setBic(bank.bic)'))failures.push('Bank selection does not auto-fill BIC')
 for(const f of ['app/onboarding/page.tsx','app/(workspace)/developer/page.tsx','app/(workspace)/routes/page.tsx','app/(workspace)/settings/page.tsx','components/workspace/CounterpartyForm.tsx','components/workspace/InvoiceForm.tsx','components/workspace/PaymentForm.tsx'])if(!read(f).includes('CurrencyFlag'))failures.push(`${f} does not use currency flags`)
 const pkg=JSON.parse(read('package.json'));const lock=JSON.parse(read('package-lock.json'))
-if(pkg.version!=='1.8.0')failures.push(`expected FlowPay 1.8.0, found ${pkg.version}`)
+if(!/^1\.(?:8|9)\.\d+$/.test(pkg.version) && !/^2\.\d+\.\d+$/.test(pkg.version))failures.push(`expected FlowPay >=1.8.0, found ${pkg.version}`)
 if(lock.version!==pkg.version||lock.packages?.['']?.version!==pkg.version)failures.push('package-lock version does not match package.json')
 if(!String(pkg.scripts?.audit||'').includes('v18-product-polish-audit.mjs'))failures.push('main audit does not include v1.8 audit')
 if(failures.length){console.error(`FlowPay v1.8 product polish audit failed with ${failures.length} issue(s):`);for(const x of failures)console.error(`- ${x}`);process.exit(1)}

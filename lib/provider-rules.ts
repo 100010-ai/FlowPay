@@ -33,6 +33,9 @@ const cachedCorridorRules = unstable_cache(async (fromCountry: string, toCountry
     .eq('active', true)
     .in('from_country', [fromCountry, '*'])
     .in('to_country', [toCountry, '*'])
+    .order('priority', { ascending: false })
+    .order('provider_code', { ascending: true })
+    .order('id', { ascending: true })
     .limit(2000)
   if (error) throw error
   if (!data) throw new Error('PROVIDER_RULES_EMPTY_RESPONSE')

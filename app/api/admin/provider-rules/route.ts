@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { requireAal2 } from '@/lib/server-auth'
 import { isFlowPayAdmin } from '@/lib/admin-auth'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { isSupportedCountry, isSupportedCurrency } from '@/lib/countries'
+import { currencies as supportedCurrencies, isSupportedCountry, isSupportedCurrency } from '@/lib/countries'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { apiJson, bodyErrorResponse, readJsonBody, requestId, trustedMutationOrigin } from '@/lib/http'
 import { invalidateProviderRuleCache } from '@/lib/provider-rules'
@@ -16,7 +16,7 @@ const base = z.object({
   display_name: z.string().trim().min(2).max(120),
   from_country: country,
   to_country: country,
-  currencies: z.array(currency).min(1).max(12),
+  currencies: z.array(currency).min(1).max(supportedCurrencies.length),
   fee_percent: z.coerce.number().min(0).max(20),
   fixed_fee: z.coerce.number().min(0).max(1_000_000),
   fx_markup_percent: z.coerce.number().min(0).max(20),
@@ -26,7 +26,7 @@ const base = z.object({
   priority: z.coerce.number().int().min(1).max(10),
   reliability_percent: z.coerce.number().min(0).max(100).nullable().optional(),
   intermediary_banks: z.coerce.number().int().min(0).max(20).nullable().optional(),
-  source: z.string().trim().min(2).max(120),
+  source: z.string().trim().min(2).max(500),
   source_updated_at: z.string().datetime().nullable().optional(),
   active: z.boolean().default(true),
 }).refine(value => value.max_amount >= value.min_amount, { message: 'INVALID_AMOUNT_RANGE' })

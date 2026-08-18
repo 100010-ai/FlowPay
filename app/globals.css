@@ -124,3 +124,78 @@ a { color: inherit; text-decoration: none; }
 @media (min-width: 1024px) {
   .fp-shell-main > main { max-width: 1580px; }
 }
+
+/* FlowPay 2.0 — control-plane visual system */
+:root {
+  --fp-bg: #f5f7f3;
+  --fp-surface: #ffffff;
+  --fp-surface-muted: #f3f6f2;
+  --fp-surface-hover: #eef3ee;
+  --fp-border: #dde4dd;
+  --fp-border-strong: #cbd6cd;
+  --fp-text: #101713;
+  --fp-muted: #5e6962;
+  --fp-subtle: #89938d;
+  --fp-shadow: 0 1px 2px rgba(15, 31, 20, .025), 0 10px 34px rgba(20, 42, 27, .038);
+  --fp-shadow-lg: 0 26px 80px rgba(18, 39, 25, .14);
+}
+
+body {
+  background:
+    radial-gradient(circle at 85% -10%, rgba(209, 229, 214, .34), transparent 28rem),
+    linear-gradient(180deg, #f8f9f6 0, var(--fp-bg) 16rem, var(--fp-bg) 100%);
+}
+
+.fp-shell-sidebar {
+  background: linear-gradient(180deg, rgba(255,255,255,.995), rgba(252,253,251,.99));
+  box-shadow: 8px 0 40px rgba(23, 47, 30, .018);
+}
+.fp-shell-topbar {
+  background: rgba(251, 252, 249, .90);
+  box-shadow: 0 8px 30px rgba(23, 42, 29, .025);
+}
+.fp-shell-main > main { position: relative; }
+.fp-shell-main > main::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0 0 auto;
+  height: 220px;
+  opacity: .32;
+  background-image: radial-gradient(#cfd9d0 .65px, transparent .65px);
+  background-size: 18px 18px;
+  mask-image: linear-gradient(to bottom, #000, transparent 88%);
+  z-index: 0;
+}
+.fp-shell-main > main > * { position: relative; z-index: 1; }
+
+.fp-card, .fp-card-flat {
+  border-radius: 18px;
+  border-color: var(--fp-border);
+}
+.fp-card {
+  box-shadow: var(--fp-shadow);
+}
+.fp-card:hover {
+  border-color: #d2dcd3;
+  box-shadow: 0 1px 2px rgba(15,31,20,.025), 0 16px 42px rgba(20,42,27,.05);
+}
+.fp-control-hub {
+  border-color: #d3dfd5;
+  box-shadow: 0 1px 2px rgba(15,31,20,.02), 0 14px 46px rgba(24,74,41,.055);
+}
+.fp-control-hub:hover { border-color: #c8d8cc; }
+.fp-kpi-grid { gap: 16px; }
+.fp-enter table thead { position: static; }
+.fp-enter table th { white-space: nowrap; }
+.fp-enter table td { font-variant-numeric: tabular-nums; }
+.fp-enter :where(input,textarea,button,a) { transition-duration: 160ms; }
+.fp-enter :where(input,textarea) { border-radius: 11px; }
+
+@media (min-width: 1280px) {
+  .fp-shell-main > main { padding-top: 34px; }
+}
+
+@media (max-width: 1023px) {
+  .fp-shell-main > main::before { height: 150px; opacity: .22; }
+}

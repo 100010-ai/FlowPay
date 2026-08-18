@@ -4,6 +4,7 @@ import { apiJson } from '@/lib/http'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { safeErrorMessage } from '@/lib/security'
 import { logSystemEvent } from '@/lib/server-log'
+import { getProviderNetworkCoverage } from '@/lib/provider-network'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,12 +51,14 @@ export async function GET(request: Request) {
   const sevenDaysAgo = isoDateDaysAgo(6)
   const oneDayAgo = isoHoursAgo(24)
   const now = new Date().toISOString()
+  const networkCoverage = getProviderNetworkCoverage()
 
   try {
     const usersPromise = listUsers(admin)
     const [
       profilesCount,
       paymentsCount,
+      approvalQueueCount,
       invoicesCount,
       counterpartiesCount,
       auditsCount,
@@ -77,6 +80,7 @@ export async function GET(request: Request) {
     ] = await Promise.all([
       admin.from('company_profiles').select('user_id', { count: 'exact', head: true }),
       admin.from('payment_drafts').select('id', { count: 'exact', head: true }),
+      admin.from('payment_drafts').select('id', { count: 'exact', head: true }).in('approval_status', ['required','pending','rejected']),
       admin.from('invoices').select('id', { count: 'exact', head: true }),
       admin.from('counterparties').select('id', { count: 'exact', head: true }),
       admin.from('audit_requests').select('id', { count: 'exact', head: true }),
@@ -85,7 +89,7 @@ export async function GET(request: Request) {
       admin.from('provider_rules').select('id', { count: 'exact', head: true }).eq('active', true),
       admin.from('system_event_logs').select('id', { count: 'exact', head: true }).eq('level', 'error').gte('created_at', oneDayAgo),
       admin.from('company_profiles').select('user_id,name,country,preferred_currency,onboarding_completed_at,created_at,updated_at').order('created_at', { ascending: false }).limit(1000),
-      admin.from('payment_drafts').select('id,user_id,supplier_name,invoice_number,amount,currency,status,due_date,route_provider_code,created_at,updated_at').order('updated_at', { ascending: false }).limit(120),
+      admin.from('payment_drafts').select('id,user_id,supplier_name,invoice_number,amount,currency,status,approval_status,due_date,route_provider_code,created_at,updated_at').order('updated_at', { ascending: false }).limit(120),
       admin.from('invoices').select('id,user_id,invoice_number,supplier_name,amount,currency,status,due_date,payment_draft_id,created_at,updated_at').order('updated_at', { ascending: false }).limit(120),
       admin.from('api_keys').select('id,user_id,name,key_prefix,scope,expires_at,last_used_at,created_at,revoked_at').order('created_at', { ascending: false }).limit(150),
       admin.from('api_request_logs').select('id,user_id,endpoint,status_code,duration_ms,request_id,created_at').order('created_at', { ascending: false }).limit(150),
@@ -97,7 +101,7 @@ export async function GET(request: Request) {
       usersPromise,
     ])
 
-    const queryResults = [profilesCount, paymentsCount, invoicesCount, counterpartiesCount, auditsCount, calculationsCount, activeKeysCount, activeRulesCount, errors24hCount, profiles, recentPayments, recentInvoices, recentApiKeys, recentApiLogs, apiUsage, workspaceAudit, systemEvents, legalAcceptances, rules]
+    const queryResults = [profilesCount, paymentsCount, approvalQueueCount, invoicesCount, counterpartiesCount, auditsCount, calculationsCount, activeKeysCount, activeRulesCount, errors24hCount, profiles, recentPayments, recentInvoices, recentApiKeys, recentApiLogs, apiUsage, workspaceAudit, systemEvents, legalAcceptances, rules]
     const failed = queryResults.find(result => result.error)
     if (failed?.error) throw failed.error
 
@@ -153,13 +157,14 @@ export async function GET(request: Request) {
     const privacyReceipts = (legalAcceptances.data || []).filter(row => row.document_type === 'privacy').length
 
     return apiJson({
-      version: '1.8.0',
+      version: '2.0.0',
       generatedAt: new Date().toISOString(),
       usersTruncated: usersResult.truncated,
       metrics: {
         users: userRows.length,
         companies: profilesCount.count || 0,
         payments: paymentsCount.count || 0,
+        approvalQueue: approvalQueueCount.count || 0,
         invoices: invoicesCount.count || 0,
         counterparties: counterpartiesCount.count || 0,
         audits: auditsCount.count || 0,
@@ -178,6 +183,7 @@ export async function GET(request: Request) {
         corridors: corridors.size,
         currencies: currencies.size,
       },
+      networkCoverage,
       breakdowns: {
         payments: countBy(paymentRows, row => String(row.status || 'unknown')),
         invoices: countBy(invoiceRows, row => String(row.status || 'unknown')),

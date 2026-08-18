@@ -27,7 +27,7 @@ requireAll('app/mfa/page.tsx',['auth.mfa.challenge','auth.mfa.verify','auth.mfa.
 requireAll('app/(workspace)/settings/security/page.tsx',['auth.mfa.enroll',"factorType: 'totp'",'auth.mfa.challenge','auth.mfa.verify','auth.mfa.unenroll','verifiedFactors','Add backup TOTP'])
 
 const provider=read('components/workspace/WorkspaceProvider.tsx')
-for(const token of ['getAuthenticatorAssuranceLevel',"currentLevel !== 'aal2'",'payments: [], counterparties: [], calculations: [], audits: [], apiKeys: [], invoices: [], apiLogs: [], apiUsage: [], providerRules: [], auditLogs: []','/settings/security?required=1','/mfa?next=']) if(!provider.includes(token)) failures.push(`WorkspaceProvider missing AAL2 gate contract: ${token}`)
+for(const token of ['getAuthenticatorAssuranceLevel',"currentLevel !== 'aal2'",'payments: [], counterparties: [], calculations: [], audits: [], apiKeys: [], invoices: [], apiLogs: [], apiUsage: [], providerRules: [], approvalEvents: [], auditLogs: []','/settings/security?required=1','/mfa?next=']) if(!provider.includes(token)) failures.push(`WorkspaceProvider missing AAL2 gate contract: ${token}`)
 if(!provider.includes("scope,expires_at")) failures.push('API key metadata loader does not include scope/expiry')
 
 const sql=read('supabase/upgrade-v16.sql')
@@ -94,7 +94,7 @@ for(const legacy of ['PaymentDialog.tsx','CounterpartyDialog.tsx','InvoiceDialog
 }
 
 const pkg=JSON.parse(read('package.json'))
-if(!/^1\.(?:6|7|8)\.\d+$/.test(pkg.version)) failures.push(`expected FlowPay 1.6+ security line, found ${pkg.version}`)
+if(!/^1\.(?:6|7|8|9)\.\d+$/.test(pkg.version) && !/^2\.\d+\.\d+$/.test(pkg.version)) failures.push(`expected FlowPay >=1.6.0 security line, found ${pkg.version}`)
 if(!String(pkg.scripts?.audit||'').includes('v16-security-audit.mjs')) failures.push('main audit does not include v1.6 security audit')
 if(pkg.scripts?.['security:prod']!=='node scripts/production-security-check.mjs') failures.push('production security smoke command is missing')
 requireAll('scripts/production-security-check.mjs',["script-src permits unsafe-inline","cross-origin /api/register","unauthenticated /api/keys","API quote without key"])

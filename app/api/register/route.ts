@@ -37,8 +37,25 @@ export async function POST(request: Request) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim()
     if (!appUrl) throw new Error('NEXT_PUBLIC_APP_URL is not configured')
 
-    // Public Auth credentials create the account; service-role is used only to
-    // persist server-trusted legal receipts after Auth confirms a newly-created user.
+    // Registration depends on the v1.9 legal-receipt RPC. Check the database
+    // before touching Supabase Auth, so a missed migration cannot create an
+    // account that immediately needs a rollback. There is intentionally no
+    // alternate/fallback receipt path.
+    const admin = createAdminClient()
+    const { data: registrationReady, error: readinessError } = await admin.rpc('flowpay_registration_ready')
+    if (readinessError || registrationReady !== true) {
+      await logSystemEvent({
+        level: 'error',
+        source: 'registration',
+        code: 'REGISTRATION_SCHEMA_NOT_READY',
+        message: readinessError ? safeErrorMessage(readinessError) : 'Registration schema readiness check returned false',
+        metadata: { requestId: reqId },
+      })
+      return apiJson({ error: 'SERVICE_UNAVAILABLE', requestId: reqId }, 503, { 'X-Request-ID': reqId })
+    }
+
+    // Public Auth credentials create the account. The server-only admin client
+    // is used only for trusted legal evidence and emergency rollback.
     const authClient = createServerClient()
     const { data, error } = await authClient.auth.signUp({
       email: parsed.data.email,
@@ -56,40 +73,53 @@ export async function POST(request: Request) {
     const createdAt = user.created_at ? new Date(user.created_at).getTime() : Number.NaN
     const isFresh = Number.isFinite(createdAt) && Math.abs(Date.now() - createdAt) <= 120_000
     if (!isFresh) {
-      // Existing-account responses are intentionally indistinguishable from a
-      // normal accepted registration request and never mint new legal receipts.
+      // Existing-account responses stay indistinguishable from a normal
+      // accepted registration request and never mint new legal receipts.
       return apiJson({ ok: true, requestId: reqId }, 202, { 'X-Request-ID': reqId })
     }
 
     const acceptedAt = new Date().toISOString()
-    const admin = createAdminClient()
-    const { error: receiptError } = await admin.from('legal_acceptances').insert([
-      {
-        user_id: user.id,
-        document_type: 'privacy',
-        document_version: parsed.data.privacyVersion,
-        action: 'acknowledged',
-        locale: parsed.data.locale,
-        source: 'registration_server',
-        accepted_at: acceptedAt,
-      },
-      {
-        user_id: user.id,
-        document_type: 'terms',
-        document_version: parsed.data.termsVersion,
-        action: 'accepted',
-        locale: parsed.data.locale,
-        source: 'registration_server',
-        accepted_at: acceptedAt,
-      },
-    ])
+    // The server-only RPC writes source=registration_server for both receipts.
+    const { error: receiptError } = await admin.rpc('flowpay_record_registration_legal', {
+      p_user_id: user.id,
+      p_privacy_version: parsed.data.privacyVersion,
+      p_terms_version: parsed.data.termsVersion,
+      p_locale: parsed.data.locale,
+      p_accepted_at: acceptedAt,
+    })
+
     if (receiptError) {
-      // Account + legal evidence is one logical registration unit. If the
-      // server-trusted receipts cannot be persisted, delete the freshly-created
-      // Auth user rather than leaving an account that can never complete onboarding.
+      // Record the actual cause before attempting rollback. This keeps a failed
+      // rollback from hiding the legal-ledger error that started the incident.
+      await logSystemEvent({
+        level: 'error',
+        source: 'registration',
+        code: 'REGISTRATION_LEGAL_RECEIPT_FAILED',
+        userId: user.id,
+        message: safeErrorMessage(receiptError),
+        metadata: { requestId: reqId },
+      })
+
       const { error: rollbackError } = await admin.auth.admin.deleteUser(user.id)
-      if (rollbackError) throw new Error('REGISTRATION_ROLLBACK_FAILED')
-      throw receiptError
+      if (rollbackError) {
+        await logSystemEvent({
+          level: 'error',
+          source: 'registration',
+          code: 'REGISTRATION_ROLLBACK_FAILED',
+          userId: user.id,
+          message: safeErrorMessage(rollbackError),
+          metadata: { requestId: reqId, originalError: safeErrorMessage(receiptError) },
+        })
+      } else {
+        await logSystemEvent({
+          level: 'warning',
+          source: 'registration',
+          code: 'REGISTRATION_ROLLED_BACK',
+          userId: user.id,
+          metadata: { requestId: reqId },
+        })
+      }
+      return apiJson({ error: 'REGISTRATION_FAILED', requestId: reqId }, 500, { 'X-Request-ID': reqId })
     }
 
     await logSystemEvent({ level: 'info', source: 'registration', code: 'ACCOUNT_REGISTERED', userId: user.id, metadata: { requestId: reqId } })

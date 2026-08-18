@@ -14,7 +14,7 @@ requireAll('lib/admin-api.ts',['requireAal2','isFlowPayAdmin','checkRateLimit','
 requireAll('app/api/admin/access/route.ts',['requireFlowPayAdmin','admin: true'])
 requireAll('app/api/admin/overview/route.ts',[
   'admin.auth.admin.listUsers','company_profiles','payment_drafts','invoices','counterparties','api_keys','api_request_logs','api_usage_daily',
-  'workspace_audit_log','system_event_logs','legal_acceptances','provider_rules','systemErrors24h','apiRequests7d','apiSuccessRate','coverage','version: \'1.8.0\''
+  'workspace_audit_log','system_event_logs','legal_acceptances','provider_rules','systemErrors24h','apiRequests7d','apiSuccessRate','coverage','version:'
 ])
 requireAll('components/admin/AdminConsole.tsx',[
   "'overview' | 'users' | 'operations' | 'api' | 'security' | 'routes'",'Launch Center','downloadCsv','API-ключи','Workspace audit trail',
@@ -27,7 +27,7 @@ if(/dangerouslySetInnerHTML|\beval\s*\(|new Function\s*\(/.test(admin)) failures
 if(admin.includes('totalVolume')||admin.includes('total_volume')) failures.push('admin console introduces a cross-currency aggregate volume')
 
 const pkg=JSON.parse(read('package.json'))
-if(!/^1\.(?:7|8)\./.test(String(pkg.version||''))) failures.push(`expected version 1.7.x, found ${pkg.version}`)
+if(!/^1\.(?:7|8|9)\./.test(String(pkg.version||'')) && !/^2\.\d+\.\d+$/.test(String(pkg.version||''))) failures.push(`expected version >=1.7.0, found ${pkg.version}`)
 if(!String(pkg.scripts?.audit||'').includes('v17-admin-launch-audit.mjs')) failures.push('main audit does not include v1.7 admin/launch audit')
 const lock=JSON.parse(read('package-lock.json'))
 if(lock.version!==pkg.version||lock.packages?.['']?.version!==pkg.version) failures.push('package-lock root metadata does not match package version')

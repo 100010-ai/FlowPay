@@ -1,5 +1,35 @@
 # Changelog
 
+## FlowPay v2.0.0 — Payment Operations Control Plane
+
+- Added Operations Center with prioritized actions for overdue/due-soon payments, approval blockers, missing routes, invoice gaps, counterparty bank-detail issues and stale provider-rule provenance.
+- Added configurable Payment Controls with an explicit approval gate, immutable approval event history and server-side transition enforcement.
+- Added cross-currency-safe approval policy: no synthetic FX is used to bypass or approximate a threshold.
+- Added Treasury commitments view with 7/30/90-day horizons, overdue exposure, currency breakdown and explicit handling of missing reference FX.
+- Added unified Activity timeline for payment changes, approval events and workspace/security audit events.
+- Added duplicate-payment detection and approval preview to the payment creation workflow.
+- Added global command palette/search across navigation, actions, payments, counterparties and invoices.
+- Reworked workspace navigation, mobile shell and dashboard into a control-oriented information architecture.
+- Added Route Intelligence summaries while preserving strict production-only routing and the no-fallback invariant. A missing eligible rule now returns explicit `422 NO_ELIGIBLE_PROVIDER_ROUTES` instead of being logged as a server failure.
+- Added approval/control telemetry to the admin console.
+- Hardened approval API error semantics: expected workflow conflicts return explicit 4xx domain responses without polluting the system-error stream, while unexpected failures remain 500-class incidents.
+- Improved Supabase/PostgREST error redaction so safe top-level messages are preserved for diagnostics without serializing details or row payloads.
+- Updated the public Security page to the 2.0 AAL2/RLS control baseline.
+- Added `upgrade-v20.sql`, v2 schema integration and `audit:v20`; updated legacy regression audits to treat 2.0 as a valid forward release while retaining their original feature contracts.
+- Kept provider catalog separate from executable routing. No synthetic provider, fee, FX rate or corridor is introduced.
+
+## FlowPay v1.9.0 — Provider network & registration hardening
+
+- Added a 13-provider network catalog with documented reach and source metadata, strictly separated from production pricing rules.
+- Expanded the platform directory to expose its existing 249 ISO countries/territories and 153 currencies; admin route rules can now attach the full currency directory instead of being capped at 12 entries.
+- Split coverage into provider-network reach and actual route-ready production coverage to avoid overstating executable routes.
+- Added provider presets to Admin Routes while keeping fees, limits and FX markup operator-verified only.
+- Kept routing strict: no fallback provider, synthetic fee, synthetic FX rate or fabricated corridor is created when no active rule matches.
+- Added `upgrade-v19.sql`, registration schema preflight and a server-only atomic legal-receipt RPC to prevent schema mismatch from creating rollback-prone users.
+- Registration now logs the original legal-receipt failure and rollback failure separately.
+- Isolated system-event logging failures from successful business operations.
+- Added deterministic provider-rule ordering and the v1.9 regression audit.
+
 ## FlowPay v1.8.0 — Security identity & payment-data UX
 
 - TOTP enrollment now sets the issuer to `FlowPay`, so authenticator apps no longer label the entry as localhost.

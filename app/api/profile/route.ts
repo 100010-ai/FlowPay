@@ -17,6 +17,8 @@ const schema = z.object({
   notify_payment_failures: z.boolean().default(true),
   notify_security_alerts: z.boolean().default(true),
   notify_weekly_reports: z.boolean().default(false),
+  approval_enabled: z.boolean().default(false),
+  approval_threshold: z.coerce.number().finite().min(0).max(1_000_000_000).default(10_000),
 })
 
 export async function PUT(request: Request) {
@@ -32,7 +34,7 @@ export async function PUT(request: Request) {
     const parsed = schema.safeParse(await readJsonBody(request, 24_576))
     if (!parsed.success) return apiJson({ error: 'INVALID_PROFILE', requestId: reqId }, 400, { 'X-Request-ID': reqId })
     const input = parsed.data
-    const { error } = await auth.client.rpc('flowpay_update_profile', {
+    const { error } = await auth.client.rpc('flowpay_update_profile_v2', {
       p_name: input.name,
       p_country: input.country,
       p_preferred_currency: input.preferred_currency,
@@ -45,6 +47,8 @@ export async function PUT(request: Request) {
       p_notify_payment_failures: input.notify_payment_failures,
       p_notify_security_alerts: input.notify_security_alerts,
       p_notify_weekly_reports: input.notify_weekly_reports,
+      p_approval_enabled: input.approval_enabled,
+      p_approval_threshold: input.approval_threshold,
     })
     if (error) return apiJson({ error: 'PROFILE_SAVE_FAILED', requestId: reqId }, 500, { 'X-Request-ID': reqId })
     return apiJson({ ok: true, requestId: reqId }, 200, { 'X-Request-ID': reqId })

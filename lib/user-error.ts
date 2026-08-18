@@ -11,3 +11,13 @@ const messages:Record<Language,Record<Context,string>>={
 }
 
 export function userError(lang:Language,context:Context){return messages[lang][context]}
+
+const noProductionRouteMessages:Record<Language,string>={
+  ru:'Для этих параметров нет активного проверенного production route. FlowPay не подставляет fallback — проверьте направление, валюты, сумму или дождитесь подтверждённого правила.',
+  en:'No active verified production route matches these parameters. FlowPay does not inject a fallback; review the corridor, currencies or amount.',
+  fr:'Aucune route de production active et vérifiée ne correspond à ces paramètres. FlowPay n’injecte aucun fallback ; vérifiez le corridor, les devises ou le montant.',
+  de:'Für diese Parameter gibt es keine aktive verifizierte Production-Route. FlowPay setzt keinen Fallback ein; prüfen Sie Korridor, Währungen oder Betrag.',
+  es:'No hay una ruta de producción activa y verificada para estos parámetros. FlowPay no inserta un fallback; revisa el corredor, las divisas o el importe.',
+}
+
+export function noProductionRouteError(lang:Language){return noProductionRouteMessages[lang]}

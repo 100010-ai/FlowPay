@@ -89,6 +89,9 @@ export type PaymentDraft = {
   route_snapshot: QuoteRoute | null
   paid_at: string | null
   received_at: string | null
+  approval_status: 'not_required' | 'required' | 'pending' | 'approved' | 'rejected'
+  approval_requested_at: string | null
+  approval_decided_at: string | null
   created_at: string
   updated_at: string
 }
@@ -126,6 +129,8 @@ export type CompanyProfile = {
   notify_payment_failures: boolean
   notify_security_alerts: boolean
   notify_weekly_reports: boolean
+  approval_enabled: boolean
+  approval_threshold: number
 }
 
 export type Calculation = {
@@ -166,6 +171,7 @@ export type AuditRequest = {
 export type ApiKeyRow = { id:string; user_id:string; name:string; key_prefix:string; scope:'quote:read'; expires_at:string; last_used_at:string|null; created_at:string; revoked_at:string|null }
 export type WorkspaceInvitation = { id:string; owner_user_id:string; email:string; role:'admin'|'finance_manager'|'analyst'|'viewer'; status:'pending'|'accepted'|'cancelled'; created_at:string; accepted_at:string|null }
 export type ProviderRuleSummary = { id:string; provider_code:string; display_name:string|null; from_country:string; to_country:string; currencies:string[]; active:boolean; source_updated_at:string|null }
+export type PaymentApprovalEvent = { id:string; user_id:string; payment_id:string; event:'requested'|'approved'|'rejected'; note:string; payment_snapshot:Record<string,unknown>; created_at:string }
 
 export type Invoice = {
   id:string; user_id:string; counterparty_id:string|null; invoice_number:string; supplier_name:string; issue_date:string|null; due_date:string|null;
