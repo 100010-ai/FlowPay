@@ -1,7 +1,7 @@
 import type { Counterparty, Invoice, Language, PaymentDraft, ProviderRuleSummary } from './types'
 import { bankDetailsState } from './payment-validation'
 
-export type OperationsTaskKind = 'payment' | 'invoice' | 'counterparty' | 'approval' | 'routing'
+export type OperationsTaskKind = 'payment' | 'invoice' | 'counterparty' | 'approval' | 'routing' | 'reconciliation'
 export type OperationsTaskSeverity = 'critical' | 'high' | 'medium' | 'low'
 export type OperationsTask = {
   id: string
@@ -22,6 +22,7 @@ export type OperationsSnapshot = {
   dueSevenDays: number
   approvalQueue: number
   settlementWatch: number
+  reconciliationQueue: number
   routingGaps: number
   dataIssues: number
   score: number
@@ -56,6 +57,20 @@ export function buildOperationsSnapshot(input: {
   const tasks: OperationsTask[] = []
 
   for (const payment of payments) {
+    if (['paid','received'].includes(payment.status) && payment.reconciliation_status !== 'matched') {
+      tasks.push({
+        id: `reconciliation:${payment.id}`,
+        kind: 'reconciliation',
+        severity: payment.reconciliation_status === 'needs_review' ? 'high' : payment.status === 'received' ? 'medium' : 'low',
+        title: payment.reconciliation_status === 'needs_review' ? (ru ? 'Платёж требует сверки' : 'Payment reconciliation needs review') : (ru ? 'Подтвердите фактический результат' : 'Reconcile the settled payment'),
+        description: ru ? `${payment.supplier_name} · зафиксируйте банковский reference, фактическую комиссию и сумму получателя.` : `${payment.supplier_name} · record the bank reference, actual fee and recipient amount.`,
+        href: '/reconciliation',
+        dueAt: null,
+        entityLabel: payment.invoice_number || payment.supplier_name,
+        amount: payment.amount,
+        currency: payment.currency,
+      })
+    }
     if (payment.status === 'paid') {
       const expectedMinutes = Number(payment.route_snapshot?.speedMinutes)
       const paidAt = payment.paid_at ? new Date(payment.paid_at).getTime() : Number.NaN
@@ -214,6 +229,7 @@ export function buildOperationsSnapshot(input: {
     }).length,
     approvalQueue: payments.filter(payment => ['required', 'pending', 'rejected'].includes(payment.approval_status)).length,
     settlementWatch: tasks.filter(task => task.id.startsWith('settlement:')).length,
+    reconciliationQueue: payments.filter(payment => ['paid','received'].includes(payment.status) && payment.reconciliation_status !== 'matched').length,
     routingGaps: tasks.filter(task => task.kind === 'routing').length,
     dataIssues: tasks.filter(task => task.kind === 'counterparty').length,
     score: Math.max(0, Math.min(100, 100 - penalty)),

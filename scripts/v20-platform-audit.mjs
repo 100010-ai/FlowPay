@@ -19,7 +19,7 @@ for(const file of [
   'V2_PLATFORM.md',
 ]) requireFile(file)
 
-requireText('package.json','"version": "2.0.0"','"audit:v20"')
+requireText('package.json','"audit:v20"')
 requireText('components/workspace/WorkspaceShell.tsx','/operations','/approvals','/treasury','/activity','FlowPay Control')
 requireText('components/workspace/WorkspaceProvider.tsx','approvalEvents','approval_status','approval_enabled','approval_threshold')
 requireText('lib/types.ts',"approval_status: 'not_required' | 'required' | 'pending' | 'approved' | 'rejected'",'PaymentApprovalEvent')
@@ -31,11 +31,11 @@ requireText('lib/operations.ts','settlementWatch','Payment is beyond its route E
 requireText('app/(workspace)/routes/page.tsx','production-rule eligibility','fallback route','NO_ELIGIBLE_PROVIDER_ROUTES')
 requireText('app/api/quote/route.ts',"rules.length === 0","NO_ELIGIBLE_PROVIDER_ROUTES",'422')
 requireText('app/api/v1/quote/route.ts',"rules.length === 0","NO_ELIGIBLE_PROVIDER_ROUTES",'422')
-requireText('app/api/admin/overview/route.ts',"version: '2.0.0'",'approvalQueue')
+requireText('app/api/admin/overview/route.ts','approvalQueue')
 requireText('app/globals.css','FlowPay 2.0 — control-plane visual system','fp-control-hub')
 requireText('lib/security.ts',"error && typeof error === 'object' && 'message' in error",'never\n  // serialize details')
 requireText('app/security/page.tsx','версия 2.0','version 2.0','AAL2/MFA')
-requireText('README.md','# FlowPay 2.0','supabase/upgrade-v20.sql','никаких fallback-маршрутов')
+requireText('README.md','## Что нового в 2.0','supabase/upgrade-v20.sql','никаких fallback-маршрутов')
 
 // Routing must remain explicit: a missing eligible production rule is an unavailable route,
 // not a synthetic quote. These markers are part of the existing production-only engine.

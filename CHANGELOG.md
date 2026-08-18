@@ -1,5 +1,19 @@
 # Changelog
 
+## FlowPay v2.1.0 — Guided Operations & Reconciliation
+
+- Reworked public and authenticated product explanation so a first-time user can understand FlowPay without prior fintech vocabulary.
+- Added a context-aware Dashboard “Start here” card and a persistent “How FlowPay works” guide on desktop and mobile.
+- Renamed workspace navigation around user actions and outcomes instead of internal product terminology.
+- Added settlement reconciliation with evidence-backed bank references, actual fees, actual recipient amounts and review states.
+- Added an AAL2-protected payment event ledger and surfaced it as a per-payment timeline plus unified activity events.
+- Added payment priorities, quick-focus views, broader search and transactional bulk status actions.
+- Added reconciliation items to Operations Center so paid-but-unmatched payments cannot silently disappear from the workflow.
+- Fixed approval threshold currency handling: `approval_currency` is now explicitly persisted by the v2.1 profile RPC and used by the payment preview.
+- Preserved the cross-currency safety rule: FlowPay never fabricates FX just to compare a payment against an approval threshold.
+- Added `upgrade-v21.sql`, `audit:v21` and v2.1 release documentation.
+- Preserved strict production-only routing with explicit `NO_ELIGIBLE_PROVIDER_ROUTES`; no fallback provider, synthetic fee, synthetic FX or fabricated corridor was added.
+
 ## FlowPay v2.0.0 — Payment Operations Control Plane
 
 - Added Operations Center with prioritized actions for overdue/due-soon payments, approval blockers, missing routes, invoice gaps, counterparty bank-detail issues and stale provider-rule provenance.

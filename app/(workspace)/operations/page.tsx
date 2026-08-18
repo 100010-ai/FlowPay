@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { AlertTriangle, ArrowRight, CheckCircle2, CircleGauge, Clock3, FileCheck2, Landmark, Route, ShieldAlert, Sparkles, Users } from 'lucide-react'
+import { AlertTriangle, ArrowRight, CheckCircle2, CircleGauge, Clock3, FileCheck2, Landmark, RefreshCw, Route, ShieldAlert, Sparkles, Users } from 'lucide-react'
 import { useWorkspace } from '@/components/workspace/WorkspaceProvider'
 import { useLanguage } from '@/components/LanguageContext'
 import { PageHeader, MetricCard } from '@/components/workspace/primitives'
@@ -14,7 +14,7 @@ import { money, relativeDate } from '@/lib/metrics'
 import { cn } from '@/lib/utils'
 import type { Language } from '@/lib/types'
 
-const kindIcons: Record<OperationsTaskKind, typeof Route> = { payment: Landmark, invoice: FileCheck2, counterparty: Users, approval: ShieldAlert, routing: Route }
+const kindIcons: Record<OperationsTaskKind, typeof Route> = { payment: Landmark, invoice: FileCheck2, counterparty: Users, approval: ShieldAlert, routing: Route, reconciliation: RefreshCw }
 const severityTone: Record<OperationsTaskSeverity, BadgeTone> = { critical: 'danger', high: 'warning', medium: 'info', low: 'neutral' }
 
 export default function OperationsPage() {
@@ -48,7 +48,7 @@ export default function OperationsPage() {
       <Card className="overflow-hidden">
         <div className="flex flex-col gap-3 border-b border-[var(--fp-border)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div><h2 className="text-[15px] font-semibold">{ru?'Очередь действий':'Action queue'}</h2><p className="mt-1 text-[13px] text-[var(--fp-muted)]">{ru?'Отсортировано по критичности и ближайшему сроку.':'Sorted by severity and nearest due date.'}</p></div>
-          <div className="flex flex-wrap gap-1.5">{(['all','payment','approval','invoice','counterparty','routing'] as const).map(value=><button key={value} onClick={()=>setKind(value)} className={cn('rounded-[9px] px-2.5 py-1.5 text-[12px] font-semibold transition',kind===value?'bg-[#eaf3ec] text-[var(--fp-green-strong)]':'bg-[#f5f6f3] text-[var(--fp-muted)] hover:text-[var(--fp-text)]')}>{value==='all'?(ru?'Все':'All'):value==='payment'?(ru?'Платежи':'Payments'):value==='approval'?(ru?'Согласования':'Approvals'):value==='invoice'?(ru?'Счета':'Invoices'):value==='counterparty'?(ru?'Реквизиты':'Details'):'Routing'}</button>)}</div>
+          <div className="flex flex-wrap gap-1.5">{(['all','payment','approval','reconciliation','invoice','counterparty','routing'] as const).map(value=><button key={value} onClick={()=>setKind(value)} className={cn('rounded-[9px] px-2.5 py-1.5 text-[12px] font-semibold transition',kind===value?'bg-[#eaf3ec] text-[var(--fp-green-strong)]':'bg-[#f5f6f3] text-[var(--fp-muted)] hover:text-[var(--fp-text)]')}>{value==='all'?(ru?'Все':'All'):value==='payment'?(ru?'Платежи':'Payments'):value==='approval'?(ru?'Согласования':'Approvals'):value==='reconciliation'?(ru?'Сверка':'Reconciliation'):value==='invoice'?(ru?'Счета':'Invoices'):value==='counterparty'?(ru?'Реквизиты':'Details'):'Routing'}</button>)}</div>
         </div>
         {tasks.length?<div className="divide-y divide-[var(--fp-border)]">{tasks.map(task=><TaskRow key={task.id} task={task} lang={lang}/>)}</div>:<div className="grid min-h-[430px] place-items-center p-8 text-center"><div><span className="mx-auto grid size-12 place-items-center rounded-[14px] bg-[var(--fp-green-soft)] text-[var(--fp-green)]"><CheckCircle2 size={22}/></span><strong className="mt-4 block text-[16px]">{ru?'Очередь чистая':'Queue is clear'}</strong><p className="mt-2 max-w-md text-[14px] leading-5 text-[var(--fp-muted)]">{ru?'FlowPay не видит срочных действий по текущим данным. Новые задачи появятся здесь автоматически из реальных операций.':'FlowPay does not see urgent actions in the current data. New tasks will appear here automatically from real operations.'}</p></div></div>}
       </Card>
@@ -62,8 +62,8 @@ export default function OperationsPage() {
 
         <Card className="p-5 sm:p-6">
           <h2 className="text-[15px] font-semibold">{ru?'Контрольные показатели':'Control indicators'}</h2>
-          <div className="mt-4 space-y-3"><ControlRow label={ru?'Активные платежи':'Active payments'} value={activePayments} good={activePayments>=0}/><ControlRow label={ru?'Settlement watch':'Settlement watch'} value={snapshot.settlementWatch} good={snapshot.settlementWatch===0}/><ControlRow label={ru?'Проблемы реквизитов':'Payment detail issues'} value={snapshot.dataIssues} good={snapshot.dataIssues===0}/><ControlRow label={ru?'Проблемы routing':'Routing issues'} value={snapshot.routingGaps} good={snapshot.routingGaps===0}/><ControlRow label={ru?'Очередь согласований':'Approval queue'} value={snapshot.approvalQueue} good={snapshot.approvalQueue===0}/></div>
-          <div className="mt-5 border-t border-[var(--fp-border)] pt-4"><Link href="/activity" className="flex items-center justify-between rounded-[10px] px-1 py-2 text-[14px] font-semibold"><span>{ru?'Журнал активности':'Activity log'}</span><ArrowRight size={14} className="text-[var(--fp-subtle)]"/></Link><Link href="/treasury" className="flex items-center justify-between rounded-[10px] px-1 py-2 text-[14px] font-semibold"><span>{ru?'План обязательств':'Commitment plan'}</span><ArrowRight size={14} className="text-[var(--fp-subtle)]"/></Link></div>
+          <div className="mt-4 space-y-3"><ControlRow label={ru?'Активные платежи':'Active payments'} value={activePayments} good={activePayments>=0}/><ControlRow label={ru?'Settlement watch':'Settlement watch'} value={snapshot.settlementWatch} good={snapshot.settlementWatch===0}/><ControlRow label={ru?'На сверке':'Reconciliation queue'} value={snapshot.reconciliationQueue} good={snapshot.reconciliationQueue===0}/><ControlRow label={ru?'Проблемы реквизитов':'Payment detail issues'} value={snapshot.dataIssues} good={snapshot.dataIssues===0}/><ControlRow label={ru?'Проблемы routing':'Routing issues'} value={snapshot.routingGaps} good={snapshot.routingGaps===0}/><ControlRow label={ru?'Очередь согласований':'Approval queue'} value={snapshot.approvalQueue} good={snapshot.approvalQueue===0}/></div>
+          <div className="mt-5 border-t border-[var(--fp-border)] pt-4"><Link href="/activity" className="flex items-center justify-between rounded-[10px] px-1 py-2 text-[14px] font-semibold"><span>{ru?'Журнал активности':'Activity log'}</span><ArrowRight size={14} className="text-[var(--fp-subtle)]"/></Link><Link href="/reconciliation" className="flex items-center justify-between rounded-[10px] px-1 py-2 text-[14px] font-semibold"><span>{ru?'Сверка платежей':'Payment reconciliation'}</span><ArrowRight size={14} className="text-[var(--fp-subtle)]"/></Link><Link href="/treasury" className="flex items-center justify-between rounded-[10px] px-1 py-2 text-[14px] font-semibold"><span>{ru?'План обязательств':'Commitment plan'}</span><ArrowRight size={14} className="text-[var(--fp-subtle)]"/></Link></div>
         </Card>
       </div>
     </div>

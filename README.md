@@ -1,13 +1,28 @@
-# FlowPay 2.0
+# FlowPay 2.1
 
-FlowPay — B2B payment operations platform: сравнение production-маршрутов международных платежей, платёжный workflow, контроль согласований, обязательства, контрагенты, счета, отчётность и API. Версия 2.0 превращает workspace из набора отдельных экранов в единый **control plane** для ежедневной работы с платежами.
+FlowPay — B2B payment operations platform: сравнение production-маршрутов международных платежей, платёжный workflow, контроль согласований, обязательства, контрагенты, счета, отчётность и API. Версия 2.1 делает этот control plane понятным с первого входа: объясняет основной workflow, показывает следующий шаг и добавляет подтверждаемую сверку фактического результата платежа.
 
 Ключевой инвариант не изменился: **никаких fallback-маршрутов**. Quote создаётся только из активных проверенных `provider_rules`; если подходящего правила нет, FlowPay возвращает отсутствие маршрута. Каталог платёжных сетей, справочные FX-курсы и UI никогда не подменяют production pricing.
+
+## Что нового в 2.1
+
+- **Product clarity / guided workflow** — главная страница и workspace теперь прямо объясняют модель FlowPay: `Поставщик → Платёж → Сравнение вариантов → Согласование → Оплата → Сверка`.
+- **Start here** на Dashboard выбирает следующий логичный CTA по фактическому состоянию аккаунта, а не показывает одинаковый onboarding всем.
+- **How FlowPay works** доступен из topbar и мобильного меню. Guide показывает реальный прогресс по данным workspace и ведёт в нужный раздел.
+- Навигация переименована в прикладные действия: «Что требует внимания», «Сравнить варианты», «План платежей», «Сверка платежей» — без необходимости угадывать внутренние термины продукта.
+- **Payment reconciliation (`/reconciliation`)** фиксирует банковский reference, фактическую комиссию, фактическую сумму получателя и состояние `unmatched / matched / needs_review`. FlowPay не заполняет эти значения приблизительно.
+- **Payment event ledger** хранит серверную timeline создания, статусов, approval, приоритета и сверки. Таблица защищена FORCE RLS + AAL2 read gate.
+- **Payments worklist 2.1** получил быстрые фокусы, приоритеты, bulk status actions, расширенный поиск и timeline выбранного платежа.
+- Исправлена approval policy: валюта порога теперь сохраняется и применяется как отдельное `approval_currency`, а не неявно подменяется reporting currency. Cross-currency правило по-прежнему не использует синтетический FX.
+- Operations Center учитывает очередь несверенных платежей и поднимает `needs_review` как отдельную операционную проблему.
+- Добавлена миграция `supabase/upgrade-v21.sql` и regression audit `npm run audit:v21`.
+
+**No-fallback invariant сохранён:** каталог провайдеров не создаёт executable route. Нет активного подходящего `provider_rule` — нет quote.
 
 ## Что нового в 2.0
 
 - **Operations Center (`/operations`)** — приоритетная рабочая очередь из реальных данных: просрочки, ближайшие платежи, routing gaps, approval queue, счета без платежей, неполные банковские реквизиты и устаревшие provider rules.
-- **Payment Controls (`/approvals`)** — настраиваемый approval gate по сумме и reporting currency с immutable snapshot каждой request/decision записи. Для cross-currency платежей контроль не делает синтетическую FX-конвертацию: такой платёж требует явного согласования.
+- **Payment Controls (`/approvals`)** — настраиваемый approval gate по сумме и отдельной approval currency с immutable snapshot каждой request/decision записи. Для cross-currency платежей контроль не делает синтетическую FX-конвертацию: такой платёж требует явного согласования.
 - **Treasury (`/treasury`)** — 7/30/90-day commitments, overdue exposure, валютная структура и календарь обязательств. Нормализация выполняется только при наличии референсного FX; отсутствующие курсы не выдумываются и остаются отдельными валютами.
 - **Settlement Watch** — оплаченные платежи, которые не получили `Received` после ETA сохранённого production route, автоматически попадают в Operations. Если у платежа нет route ETA, FlowPay его не выдумывает.
 - **Activity (`/activity`)** — единая timeline платежных изменений, approval events и workspace/security audit событий.
@@ -75,7 +90,7 @@ FlowPay — B2B payment operations platform: сравнение production-ма�
 - Security Center показывает способ входа, состояние MFA, срок текущей сессии и последние изменения API-доступа/профиля из audit log.
 - Добавлен `npm run audit:v14`, который защищает новые продуктовые функции от регрессий.
 
-FlowPay 2.0 сохраняет security baseline v1.6, production-only routing v1.9 и добавляет `supabase/upgrade-v20.sql`. Для существующей базы миграции применяются последовательно; v2.0 migration выполняется последней.
+FlowPay 2.1 сохраняет security baseline v1.6, production-only routing v1.9 и control-plane baseline v2.0. Для существующей базы миграции применяются последовательно; после `supabase/upgrade-v20.sql` последней выполняется `supabase/upgrade-v21.sql`.
 
 ## Что изменилось в 1.3
 
@@ -118,10 +133,17 @@ FlowPay 2.0 сохраняет security baseline v1.6, production-only routing v
 supabase/schema.sql
 ```
 
+### База уже на FlowPay 2.0.x
+
+```text
+supabase/upgrade-v21.sql
+```
+
 ### База уже на FlowPay 1.9.x
 
 ```text
 supabase/upgrade-v20.sql
+supabase/upgrade-v21.sql
 ```
 
 ### База на FlowPay 1.8.x
@@ -129,6 +151,7 @@ supabase/upgrade-v20.sql
 ```text
 supabase/upgrade-v19.sql
 supabase/upgrade-v20.sql
+supabase/upgrade-v21.sql
 ```
 
 ### База на FlowPay 1.6 / 1.7.x
@@ -137,6 +160,7 @@ supabase/upgrade-v20.sql
 supabase/upgrade-v171.sql
 supabase/upgrade-v19.sql
 supabase/upgrade-v20.sql
+supabase/upgrade-v21.sql
 ```
 
 ### База на FlowPay 1.5
@@ -146,6 +170,7 @@ supabase/upgrade-v16.sql
 supabase/upgrade-v171.sql
 supabase/upgrade-v19.sql
 supabase/upgrade-v20.sql
+supabase/upgrade-v21.sql
 ```
 
 ### База на FlowPay 1.3/1.4
@@ -156,6 +181,7 @@ supabase/upgrade-v16.sql
 supabase/upgrade-v171.sql
 supabase/upgrade-v19.sql
 supabase/upgrade-v20.sql
+supabase/upgrade-v21.sql
 ```
 
 ### База на FlowPay 1.2.x
@@ -167,11 +193,12 @@ supabase/upgrade-v16.sql
 supabase/upgrade-v171.sql
 supabase/upgrade-v19.sql
 supabase/upgrade-v20.sql
+supabase/upgrade-v21.sql
 ```
 
-Для ещё более старой базы сначала последовательно выполни имеющиеся `upgrade-v10.sql` → `upgrade-v13.sql`, затем `upgrade-v15.sql`, `upgrade-v16.sql`, `upgrade-v171.sql`, `upgrade-v19.sql` и **последней** `upgrade-v20.sql`.
+Для ещё более старой базы сначала последовательно выполни имеющиеся `upgrade-v10.sql` → `upgrade-v13.sql`, затем `upgrade-v15.sql`, `upgrade-v16.sql`, `upgrade-v171.sql`, `upgrade-v19.sql`, `upgrade-v20.sql` и **последней** `upgrade-v21.sql`.
 
-**Важно:** `upgrade-v19.sql` по-прежнему нужен до открытия регистрации, а `upgrade-v20.sql` должен быть применён **до деплоя UI/API FlowPay 2.0**. Код 2.0 читает approval-поля и `payment_approval_events`; без миграции workspace будет получать ошибки загрузки.
+**Важно:** `upgrade-v19.sql` по-прежнему нужен до открытия регистрации; `upgrade-v20.sql` обязателен для control-plane/approval слоя, а `upgrade-v21.sql` должен быть применён **до деплоя UI/API FlowPay 2.1**. Код 2.1 читает reconciliation-поля и `payment_events`; без последней миграции новые экраны будут получать ошибки загрузки.
 
 Миграции не добавляют выдуманные тарифы платёжных провайдеров. Каталог сетей — справочный; реальные маршруты и комиссии добавляются оператором через `/admin` как проверенные `provider_rules`.
 

@@ -18,6 +18,7 @@ import { buttonVariants } from '@/components/ui/button'
 import { clamp, cn } from '@/lib/utils'
 import { bankDetailsState } from '@/lib/payment-validation'
 import { buildOperationsSnapshot } from '@/lib/operations'
+import { WorkspaceIntroCard } from '@/components/workspace/WorkspaceIntroCard'
 
 export default function DashboardPage(){
   const ws=useWorkspace();const {lang}=useLanguage();const t=workspaceDictionaries[lang];const copy=workspaceCopy[lang];const base=ws.profile?.preferred_currency||null
@@ -47,6 +48,8 @@ export default function DashboardPage(){
 
   return <div className="fp-enter">
     <PageHeader title={t.overview.title} eyebrow={company||undefined} subtitle={t.overview.subtitle} actions={<><Link href="/routes" className={cn(buttonVariants({variant:'secondary',size:'md'}))}><RouteIcon size={15}/>{lang==='ru'?'Сравнить маршрут':'Compare route'}</Link><Link href="/payments?new=1" className={cn(buttonVariants({size:'md'}))}><Plus size={15}/>{t.common.newPayment}</Link></>}/>
+
+    <WorkspaceIntroCard/>
 
     {emptyAccount?<GettingStarted lang={lang} hasProfile={Boolean(ws.profile?.name)} hasBase={Boolean(base)}/>:<>
     {!base&&<Card className="mb-5 overflow-hidden border-[#cfe0d3] bg-[linear-gradient(110deg,#f1f8f3_0%,#fbfdfb_70%)] p-5 sm:p-6"><div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white text-[var(--fp-green)] shadow-sm"><Settings2 size={18}/></span><div><strong className="text-[15px]">{lang==='ru'?'Завершите настройку отчётности':'Finish reporting setup'}</strong><p className="mt-1 max-w-2xl text-[14px] leading-5 text-[var(--fp-muted)]">{lang==='ru'?'Выберите базовую валюту компании, чтобы FlowPay показывал общий объём, экономию и аналитику в одном формате.':'Choose your company reporting currency to unlock normalized volume, savings and analytics.'}</p></div></div><Link href="/settings" className={cn(buttonVariants({size:'sm'}),'shrink-0')}>{lang==='ru'?'Настроить':'Set up'}<ArrowRight size={14}/></Link></div></Card>}

@@ -1,11 +1,11 @@
-# FlowPay 2.0 — чеклист перед запуском
+# FlowPay 2.1 — чеклист перед запуском
 
 Кодовая часть, которую можно закрыть без твоего юрлица, домена и договоров с платёжными партнёрами, подготовлена. Перед закрытой бетой пройди пункты ниже.
 
 ## Обязательно перед private beta
 
 - [ ] На существующей базе после `upgrade-v13.sql` обязательно выполнить `supabase/upgrade-v15.sql` для защищённого журнала принятия Privacy/Terms.
-- [ ] На существующей базе применить миграции до v1.9, затем **последней** выполнить `supabase/upgrade-v20.sql` до деплоя FlowPay 2.0. `upgrade-v19.sql` всё ещё обязателен до открытия регистрации.
+- [ ] На существующей базе применить миграции до v1.9, затем `supabase/upgrade-v20.sql` и **последней** `supabase/upgrade-v21.sql` до деплоя FlowPay 2.1. `upgrade-v19.sql` всё ещё обязателен до открытия регистрации.
 - [ ] В Vercel задать `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`.
 - [ ] Задать `FLOWPAY_ADMIN_USER_IDS` для всех операторов `/admin`; email-based доступ не используется.
 - [ ] Задать `NEXT_PUBLIC_APP_URL` на production HTTPS-домен.
@@ -27,7 +27,7 @@
 5. Создать платёж из счёта.
 6. Запросить маршрут и убедиться, что возвращаются только реально настроенные правила.
    Проверить также отсутствие подходящего правила: ответ не должен подставлять каталог провайдеров или синтетический маршрут.
-7. Включить Payment Controls, создать платёж выше threshold, запросить approval и убедиться, что `ready/paid` блокируются до решения. После `approved` провести `draft/ready → paid → received` и проверить связанный счёт.
+7. Включить Payment Controls, выбрать отдельную approval currency, создать платёж выше threshold, запросить approval и убедиться, что `ready/paid` блокируются до решения. После `approved` провести `draft/ready → paid → received`, открыть `/reconciliation`, сохранить bank reference и убедиться, что платёж становится `matched`.
 8. Создать API-ключ, вызвать `POST /api/v1/quote`, затем отозвать ключ.
 9. Проверить CSV-импорт контрагентов/счетов и экспорт Payments/Reports.
 10. Открыть `/status` и проверить основные системы.
@@ -102,6 +102,19 @@
 - [ ] Provider preset не создаёт pricing rule автоматически: комиссия, лимиты, валюты и направление сохраняются только после явного admin save.
 - [ ] Route rule принимает более 12 валют и позволяет использовать весь платформенный справочник, если это подтверждено источником.
 - [ ] При отсутствии active `provider_rules` quote возвращает отсутствие маршрута; никакого fallback нет.
+
+## FlowPay 2.1 clarity & reconciliation checks
+
+- [ ] `supabase/upgrade-v21.sql` применён после `upgrade-v20.sql` до запуска workspace 2.1.
+- [ ] Новый пользователь на Dashboard видит “Начните отсюда” и CTA ведёт к следующему фактически недостающему шагу.
+- [ ] “Как работает FlowPay” открывается как из desktop topbar, так и из mobile drawer.
+- [ ] `/reconciliation` показывает только `paid/received` платежи и не генерирует fake reference, fee или recipient amount.
+- [ ] `matched` невозможно сохранить без банковского reference; `needs_review` виден в Operations.
+- [ ] Payment timeline отражает server-side `payment_events`, а таблица недоступна через AAL1.
+- [ ] Bulk status action атомарен: если хотя бы один выбранный платёж не проходит server transition/approval check, весь batch откатывается.
+- [ ] Настроенная `approval_currency` сохраняется отдельно от reporting currency и используется в approval preview.
+- [ ] `/routes` и quote API при отсутствии production rule по-прежнему возвращают no-route / `422 NO_ELIGIBLE_PROVIDER_ROUTES`.
+
 
 ## FlowPay 2.0 control-plane checks
 

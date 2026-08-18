@@ -27,7 +27,7 @@ requireAll('app/mfa/page.tsx',['auth.mfa.challenge','auth.mfa.verify','auth.mfa.
 requireAll('app/(workspace)/settings/security/page.tsx',['auth.mfa.enroll',"factorType: 'totp'",'auth.mfa.challenge','auth.mfa.verify','auth.mfa.unenroll','verifiedFactors','Add backup TOTP'])
 
 const provider=read('components/workspace/WorkspaceProvider.tsx')
-for(const token of ['getAuthenticatorAssuranceLevel',"currentLevel !== 'aal2'",'payments: [], counterparties: [], calculations: [], audits: [], apiKeys: [], invoices: [], apiLogs: [], apiUsage: [], providerRules: [], approvalEvents: [], auditLogs: []','/settings/security?required=1','/mfa?next=']) if(!provider.includes(token)) failures.push(`WorkspaceProvider missing AAL2 gate contract: ${token}`)
+for(const token of ['getAuthenticatorAssuranceLevel',"currentLevel !== 'aal2'",'payments: [], counterparties: [], calculations: [], audits: [], apiKeys: [], invoices: [], apiLogs: [], apiUsage: [], providerRules: [], approvalEvents: [], paymentEvents: [], auditLogs: []','/settings/security?required=1','/mfa?next=']) if(!provider.includes(token)) failures.push(`WorkspaceProvider missing AAL2 gate contract: ${token}`)
 if(!provider.includes("scope,expires_at")) failures.push('API key metadata loader does not include scope/expiry')
 
 const sql=read('supabase/upgrade-v16.sql')

@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import { withClientTimeout } from '@/lib/client-timeout'
-import type { ApiKeyRow, ApiRequestLog, ApiUsageDaily, AuditRequest, Calculation, CompanyProfile, Counterparty, Invoice, PaymentApprovalEvent, PaymentDraft, ProviderRuleSummary, WorkspaceAuditLog } from '@/lib/types'
+import type { ApiKeyRow, ApiRequestLog, ApiUsageDaily, AuditRequest, Calculation, CompanyProfile, Counterparty, Invoice, PaymentApprovalEvent, PaymentDraft, PaymentEvent, ProviderRuleSummary, WorkspaceAuditLog } from '@/lib/types'
 
 type WorkspaceState = {
   user: User | null
@@ -20,6 +20,7 @@ type WorkspaceState = {
   apiUsage: ApiUsageDaily[]
   providerRules: ProviderRuleSummary[]
   approvalEvents: PaymentApprovalEvent[]
+  paymentEvents: PaymentEvent[]
   auditLogs: WorkspaceAuditLog[]
   mfaCurrentLevel: 'aal1'|'aal2'|null
   mfaNextLevel: 'aal1'|'aal2'|null
@@ -37,7 +38,7 @@ function numberize<T extends Record<string, unknown>>(row: T, keys: string[]) {
   return clone as T
 }
 
-type JobName = 'profile'|'payments'|'counterparties'|'calculations'|'audits'|'apiKeys'|'invoices'|'apiLogs'|'apiUsage'|'providerRules'|'approvalEvents'|'auditLogs'
+type JobName = 'profile'|'payments'|'counterparties'|'calculations'|'audits'|'apiKeys'|'invoices'|'apiLogs'|'apiUsage'|'providerRules'|'approvalEvents'|'paymentEvents'|'auditLogs'
 type Job = { name: JobName; promise: PromiseLike<any> }
 
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
@@ -53,7 +54,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const loadedLimit = useRef<Partial<Record<JobName, number>>>({})
   const mounted = useRef(false)
   const [state, setState] = useState<Omit<WorkspaceState, 'refresh'>>({
-    user: null, profile: null, payments: [], counterparties: [], calculations: [], audits: [], apiKeys: [], invoices: [], apiLogs: [], apiUsage: [], providerRules: [], approvalEvents: [], auditLogs: [], mfaCurrentLevel: null, mfaNextLevel: null, loading: true, refreshing: false, error: null,
+    user: null, profile: null, payments: [], counterparties: [], calculations: [], audits: [], apiKeys: [], invoices: [], apiLogs: [], apiUsage: [], providerRules: [], approvalEvents: [], paymentEvents: [], auditLogs: [], mfaCurrentLevel: null, mfaNextLevel: null, loading: true, refreshing: false, error: null,
   })
 
   const load = useCallback(async (initial = false, force = false) => {
@@ -84,7 +85,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
           ...s,
           user,
           profile: null,
-          payments: [], counterparties: [], calculations: [], audits: [], apiKeys: [], invoices: [], apiLogs: [], apiUsage: [], providerRules: [], approvalEvents: [], auditLogs: [],
+          payments: [], counterparties: [], calculations: [], audits: [], apiKeys: [], invoices: [], apiLogs: [], apiUsage: [], providerRules: [], approvalEvents: [], paymentEvents: [], auditLogs: [],
           mfaCurrentLevel: currentLevel,
           mfaNextLevel: nextLevel,
           loading: false,
@@ -109,7 +110,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       const inTreasury = inSection('/treasury')
       const inApprovals = inSection('/approvals')
       const inActivity = inSection('/activity')
-      const highPaymentDetail = ['/dashboard','/analytics','/reports'].includes(pathname) || inPayments || inCounterparties || inOperations || inTreasury || inApprovals
+      const inReconciliation = inSection('/reconciliation')
+      const highPaymentDetail = ['/dashboard','/analytics','/reports'].includes(pathname) || inPayments || inCounterparties || inOperations || inTreasury || inApprovals || inReconciliation
       const highCounterpartyDetail = ['/reports'].includes(pathname) || inPayments || inCounterparties || inInvoices || inOperations
       const highCalculationDetail = ['/dashboard','/routes','/analytics','/reports'].includes(pathname)
       const highInvoiceDetail = ['/dashboard','/reports'].includes(pathname) || inCounterparties || inInvoices || inPayments || inOperations || inTreasury
@@ -124,8 +126,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       const calculationLimit = highCalculationDetail ? 500 : 50
       const invoiceLimit = highInvoiceDetail ? 500 : 80
       const auditLogLimit = highAuditDetail ? 300 : 50
-      if (stale('profile', 60_000)) jobs.push({ name: 'profile', promise: supabase.from('company_profiles').select('name,country,preferred_currency,registration_number,business_address,default_payment_method,default_charge_type,beneficiary_notifications,notify_payment_confirmations,notify_payment_failures,notify_security_alerts,notify_weekly_reports,approval_enabled,approval_threshold').eq('user_id', uid).maybeSingle() })
-      if (staleWithLimit('payments', paymentLimit)) jobs.push({ name: 'payments', promise: supabase.from('payment_drafts').select('id,user_id,counterparty_id,supplier_name,invoice_number,amount,currency,due_date,route_provider_code,estimated_fee,payment_method,charge_type,status,notes,route_from_country,route_to_country,recipient_currency,recipient_amount,reference,route_snapshot,paid_at,received_at,approval_status,approval_requested_at,approval_decided_at,created_at,updated_at').eq('user_id', uid).order('updated_at', { ascending: false }).limit(paymentLimit) })
+      if (stale('profile', 60_000)) jobs.push({ name: 'profile', promise: supabase.from('company_profiles').select('name,country,preferred_currency,registration_number,business_address,default_payment_method,default_charge_type,beneficiary_notifications,notify_payment_confirmations,notify_payment_failures,notify_security_alerts,notify_weekly_reports,approval_enabled,approval_threshold,approval_currency').eq('user_id', uid).maybeSingle() })
+      if (staleWithLimit('payments', paymentLimit)) jobs.push({ name: 'payments', promise: supabase.from('payment_drafts').select('id,user_id,counterparty_id,supplier_name,invoice_number,amount,currency,due_date,route_provider_code,estimated_fee,payment_method,charge_type,status,notes,route_from_country,route_to_country,recipient_currency,recipient_amount,reference,route_snapshot,paid_at,received_at,approval_status,approval_requested_at,approval_decided_at,priority,reconciliation_status,reconciliation_reference,reconciliation_note,actual_fee,actual_recipient_amount,reconciled_at,created_at,updated_at').eq('user_id', uid).order('updated_at', { ascending: false }).limit(paymentLimit) })
       if (staleWithLimit('counterparties', counterpartyLimit, 30_000)) jobs.push({ name: 'counterparties', promise: supabase.from('counterparties').select('id,user_id,name,country,currency,bank_country,account_number,bic,email,total_sent,last_payment_at,verification_status,bank_name,account_holder,tax_id,created_at,updated_at').eq('user_id', uid).order('updated_at', { ascending: false }).limit(counterpartyLimit) })
       if (staleWithLimit('calculations', calculationLimit, 20_000)) jobs.push({ name: 'calculations', promise: supabase.from('calculations').select('id,user_id,quote_id,from_country,to_country,amount,currency,recipient_currency,best_provider_code,best_fee,best_total_cost,best_speed_minutes,estimated_saving,routes_snapshot,created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(calculationLimit) })
       if (staleWithLimit('auditLogs', auditLogLimit, 30_000)) jobs.push({ name: 'auditLogs', promise: supabase.from('workspace_audit_log').select('id,user_id,entity_type,entity_id,action,created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(auditLogLimit) })
@@ -137,6 +139,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       if ((inDeveloper || pathname === '/reports') && stale('apiUsage', 30_000)) jobs.push({ name: 'apiUsage', promise: supabase.from('api_usage_daily').select('user_id,endpoint,usage_date,request_count,success_count,error_count,total_duration_ms,max_duration_ms,updated_at').eq('user_id', uid).order('usage_date', { ascending: false }).limit(365) })
       if ((inPayments || inSettings || inOperations || ['/dashboard','/routes','/analytics'].includes(pathname)) && stale('providerRules', 60_000)) jobs.push({ name: 'providerRules', promise: supabase.from('provider_rules').select('id,provider_code,display_name,from_country,to_country,currencies,active,source_updated_at').eq('active', true).limit(1000) })
       if ((inApprovals || inOperations || inActivity || pathname === '/dashboard') && stale('approvalEvents', 15_000)) jobs.push({ name: 'approvalEvents', promise: supabase.from('payment_approval_events').select('id,user_id,payment_id,event,note,payment_snapshot,created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(300) })
+      if ((inPayments || inOperations || inActivity || inReconciliation || pathname === '/dashboard') && stale('paymentEvents', 15_000)) jobs.push({ name: 'paymentEvents', promise: supabase.from('payment_events').select('id,user_id,payment_id,actor_user_id,event,from_value,to_value,metadata,created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(inPayments || inReconciliation ? 800 : 300) })
 
       const results = await withClientTimeout(Promise.all(jobs.map(async job => [job.name, await job.promise] as const)), 15_000, 'WORKSPACE_DATA_TIMEOUT')
       const resultMap = new Map<JobName, { data: unknown; error: { message?: string } | null }>(results)
@@ -157,7 +160,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         ...s,
         user,
         profile: resultMap.has('profile') ? (() => { const row=get<Record<string, unknown> | null>('profile'); return row ? (numberize(row, ['approval_threshold']) as CompanyProfile) : null })() : s.profile,
-        payments: resultMap.has('payments') ? ((get<Record<string, unknown>[]>('payments') || []).map(r => numberize(r, ['amount','estimated_fee','recipient_amount'])) as PaymentDraft[]) : s.payments,
+        payments: resultMap.has('payments') ? ((get<Record<string, unknown>[]>('payments') || []).map(r => numberize(r, ['amount','estimated_fee','recipient_amount','actual_fee','actual_recipient_amount'])) as PaymentDraft[]) : s.payments,
         counterparties: resultMap.has('counterparties') ? ((get<Record<string, unknown>[]>('counterparties') || []).map(r => numberize(r, ['total_sent'])) as Counterparty[]) : s.counterparties,
         calculations: resultMap.has('calculations') ? ((get<Record<string, unknown>[]>('calculations') || []).map(r => numberize(r, ['amount','best_fee','best_total_cost','estimated_saving'])) as Calculation[]) : s.calculations,
         audits: resultMap.has('audits') ? ((get<Record<string, unknown>[]>('audits') || []).map(r => numberize(r, ['amount','actual_fee','estimated_best_fee','potential_saving'])) as AuditRequest[]) : s.audits,
@@ -167,6 +170,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         apiUsage: resultMap.has('apiUsage') ? ((get<Record<string, unknown>[]>('apiUsage') || []).map(r => numberize(r, ['request_count','success_count','error_count','total_duration_ms','max_duration_ms'])) as ApiUsageDaily[]) : s.apiUsage,
         providerRules: resultMap.has('providerRules') ? ((get<ProviderRuleSummary[]>('providerRules') || []) as ProviderRuleSummary[]) : s.providerRules,
         approvalEvents: resultMap.has('approvalEvents') ? ((get<PaymentApprovalEvent[]>('approvalEvents') || []) as PaymentApprovalEvent[]) : s.approvalEvents,
+        paymentEvents: resultMap.has('paymentEvents') ? ((get<PaymentEvent[]>('paymentEvents') || []) as PaymentEvent[]) : s.paymentEvents,
         auditLogs: resultMap.has('auditLogs') ? ((get<WorkspaceAuditLog[]>('auditLogs') || []) as WorkspaceAuditLog[]) : s.auditLogs,
         mfaCurrentLevel: currentLevel,
         mfaNextLevel: nextLevel,
@@ -187,7 +191,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       if (event === 'SIGNED_OUT' || !session?.user) {
         authCache.current = { user: null, validatedAt: 0 }
         loadedAt.current = {}; loadedLimit.current = {}
-        setState({ user:null, profile:null, payments:[], counterparties:[], calculations:[], audits:[], apiKeys:[], invoices:[], apiLogs:[], apiUsage:[], providerRules:[], approvalEvents:[], auditLogs:[], mfaCurrentLevel:null, mfaNextLevel:null, loading:false, refreshing:false, error:null })
+        setState({ user:null, profile:null, payments:[], counterparties:[], calculations:[], audits:[], apiKeys:[], invoices:[], apiLogs:[], apiUsage:[], providerRules:[], approvalEvents:[], paymentEvents:[], auditLogs:[], mfaCurrentLevel:null, mfaNextLevel:null, loading:false, refreshing:false, error:null })
         if (event === 'SIGNED_OUT') router.replace('/login')
         return
       }

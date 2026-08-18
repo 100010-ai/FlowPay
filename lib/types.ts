@@ -92,6 +92,13 @@ export type PaymentDraft = {
   approval_status: 'not_required' | 'required' | 'pending' | 'approved' | 'rejected'
   approval_requested_at: string | null
   approval_decided_at: string | null
+  priority: 'low' | 'normal' | 'high' | 'urgent'
+  reconciliation_status: 'not_ready' | 'unmatched' | 'matched' | 'needs_review'
+  reconciliation_reference: string
+  reconciliation_note: string
+  actual_fee: number | null
+  actual_recipient_amount: number | null
+  reconciled_at: string | null
   created_at: string
   updated_at: string
 }
@@ -131,6 +138,7 @@ export type CompanyProfile = {
   notify_weekly_reports: boolean
   approval_enabled: boolean
   approval_threshold: number
+  approval_currency: string
 }
 
 export type Calculation = {
@@ -172,6 +180,7 @@ export type ApiKeyRow = { id:string; user_id:string; name:string; key_prefix:str
 export type WorkspaceInvitation = { id:string; owner_user_id:string; email:string; role:'admin'|'finance_manager'|'analyst'|'viewer'; status:'pending'|'accepted'|'cancelled'; created_at:string; accepted_at:string|null }
 export type ProviderRuleSummary = { id:string; provider_code:string; display_name:string|null; from_country:string; to_country:string; currencies:string[]; active:boolean; source_updated_at:string|null }
 export type PaymentApprovalEvent = { id:string; user_id:string; payment_id:string; event:'requested'|'approved'|'rejected'; note:string; payment_snapshot:Record<string,unknown>; created_at:string }
+export type PaymentEvent = { id:string; user_id:string; payment_id:string; actor_user_id:string|null; event:'created'|'updated'|'status_changed'|'approval_changed'|'reconciliation_changed'|'priority_changed'; from_value:string|null; to_value:string|null; metadata:Record<string,unknown>; created_at:string }
 
 export type Invoice = {
   id:string; user_id:string; counterparty_id:string|null; invoice_number:string; supplier_name:string; issue_date:string|null; due_date:string|null;
